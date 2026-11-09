@@ -14,6 +14,8 @@
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800;900&family=Noto+Sans+SC:wght@500;700;900&family=Quicksand:wght@600;700&display=swap" rel="stylesheet">
   <!-- SortableJS for smooth drag and reordering on mobile and desktop -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
+  <!-- QRCode.js for generating instant shareable QR codes for mobile students -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
   <style>
     body {
@@ -90,6 +92,20 @@
           </svg>
           <span>Load Sentences</span>
         </button>
+
+        <!-- Share to Students Button (Teacher mode only) -->
+        <button id="btn-share-room" class="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold px-3.5 py-2 rounded-xl shadow-md transition-all text-sm sm:text-base" title="Generate QR code and student link">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+          </svg>
+          <span class="hidden sm:inline">Share to Students</span>
+          <span class="sm:hidden">Share</span>
+        </button>
+
+        <!-- Student Mode Badge (Visible only in student mode) -->
+        <div id="student-mode-badge" class="hidden items-center gap-1.5 bg-emerald-500/15 border border-emerald-500 text-emerald-700 font-extrabold text-xs px-3 py-1.5 rounded-xl">
+          <span>🎓 Student Practice</span>
+        </div>
 
         <div class="hidden sm:flex items-center bg-white px-3 py-1.5 rounded-lg border border-slate-200 text-xs text-slate-600 font-semibold shadow-inner">
           Question <span id="current-q-index" class="text-indigo-600 font-extrabold mx-1">1</span> of <span id="total-q-count" class="font-extrabold ml-1">5</span>
@@ -328,6 +344,41 @@
     </div>
   </div>
 
+  <!-- ================= MODAL: SHARE TO STUDENTS (QR CODE & LINK) ================= -->
+  <div id="share-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-6 hidden">
+    <div class="bg-[#1e2538] border border-slate-700/80 rounded-3xl max-w-md w-full shadow-2xl p-6 sm:p-7 text-white text-center relative">
+      <button id="btn-close-share-modal" class="absolute top-5 right-5 w-9 h-9 rounded-full bg-slate-800 hover:bg-slate-700 flex items-center justify-center text-slate-300 transition-colors">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+
+      <div class="w-12 h-12 bg-emerald-500/20 text-emerald-400 rounded-2xl flex items-center justify-center mx-auto mb-3">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/>
+        </svg>
+      </div>
+
+      <h3 class="text-xl font-black text-slate-100 mb-1">Scan or Share with Students</h3>
+      <p class="text-xs text-slate-400 mb-4">Students opening this link can only solve questions. The answer keys and editor are completely hidden.</p>
+
+      <!-- QR Code Canvas Container -->
+      <div class="bg-white p-4 rounded-2xl inline-block shadow-inner mb-4">
+        <div id="qrcode-container" class="flex justify-center items-center"></div>
+      </div>
+
+      <!-- Share Link Box -->
+      <div class="flex items-center gap-2 bg-[#111625] border border-slate-700 rounded-xl p-2 mb-4 text-left">
+        <input id="student-share-link" type="text" readonly class="w-full bg-transparent text-xs text-slate-300 font-mono focus:outline-none px-2 select-all">
+        <button id="btn-copy-share-link" class="bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white text-xs font-bold px-3 py-2 rounded-lg transition-all shrink-0">
+          Copy Link
+        </button>
+      </div>
+
+      <p id="copy-status-msg" class="text-xs text-emerald-400 font-bold hidden">✓ Link copied to clipboard!</p>
+    </div>
+  </div>
+
   <!-- Audio Synthesizer & Logic JavaScript -->
   <script>
     /* ====================================================================
@@ -442,6 +493,8 @@
     let currentTheme = 'pastel';
     let sortableTarget = null;
     let isCurrentQuestionAnsweredCorrectly = false;
+    let isStudentMode = false;
+    let qrcodeInstance = null;
 
     // DOM Elements
     const bodyEl = document.getElementById('app-body');
@@ -466,6 +519,16 @@
     const btnCheck = document.getElementById('btn-check');
     const btnReset = document.getElementById('btn-reset');
     const btnNext = document.getElementById('btn-next');
+
+    // Share Modal elements
+    const shareModal = document.getElementById('share-modal');
+    const btnShareRoom = document.getElementById('btn-share-room');
+    const btnCloseShareModal = document.getElementById('btn-close-share-modal');
+    const studentShareLinkInput = document.getElementById('student-share-link');
+    const btnCopyShareLink = document.getElementById('btn-copy-share-link');
+    const copyStatusMsg = document.getElementById('copy-status-msg');
+    const qrcodeContainer = document.getElementById('qrcode-container');
+    const studentModeBadge = document.getElementById('student-mode-badge');
 
     // Modal elements
     const loadModal = document.getElementById('load-modal');
@@ -932,6 +995,102 @@
       resetTimer();
     });
 
+    /* ====================================================================
+       STUDENT SHARING (QR CODE & LINK GENERATION)
+       ==================================================================== */
+    function encodePayload(obj) {
+      const jsonStr = JSON.stringify(obj);
+      return encodeURIComponent(btoa(unescape(encodeURIComponent(jsonStr))));
+    }
+
+    function decodePayload(encoded) {
+      try {
+        const jsonStr = decodeURIComponent(escape(atob(decodeURIComponent(encoded))));
+        return JSON.parse(jsonStr);
+      } catch (e) {
+        console.error("Payload decoding error", e);
+        return null;
+      }
+    }
+
+    function generateStudentLink() {
+      const payload = {
+        mode: 'student',
+        timer: parseInt(timerSettingInput.value, 10) || 60,
+        questions: questions
+      };
+      const encoded = encodePayload(payload);
+      const baseUrl = window.location.origin + window.location.pathname;
+      return `${baseUrl}#data=${encoded}`;
+    }
+
+    function openShareModal() {
+      const shareUrl = generateStudentLink();
+      studentShareLinkInput.value = shareUrl;
+      copyStatusMsg.classList.add('hidden');
+
+      // Generate or update QR Code
+      qrcodeContainer.innerHTML = '';
+      qrcodeInstance = new QRCode(qrcodeContainer, {
+        text: shareUrl,
+        width: 190,
+        height: 190,
+        colorDark: "#0f172a",
+        colorLight: "#ffffff",
+        correctLevel: QRCode.CorrectLevel.M
+      });
+
+      shareModal.classList.remove('hidden');
+    }
+
+    function closeShareModal() {
+      shareModal.classList.add('hidden');
+    }
+
+    btnShareRoom.addEventListener('click', openShareModal);
+    btnCloseShareModal.addEventListener('click', closeShareModal);
+    shareModal.addEventListener('click', (e) => {
+      if (e.target === shareModal) closeShareModal();
+    });
+
+    btnCopyShareLink.addEventListener('click', () => {
+      studentShareLinkInput.select();
+      studentShareLinkInput.setSelectionRange(0, 99999);
+      try {
+        document.execCommand('copy');
+        copyStatusMsg.classList.remove('hidden');
+        setTimeout(() => {
+          copyStatusMsg.classList.add('hidden');
+        }, 2500);
+      } catch (err) {
+        console.warn("Could not copy link", err);
+      }
+    });
+
+    // Check if opening URL has student payload in hash
+    function checkStudentModeFromURL() {
+      const hash = window.location.hash;
+      if (hash && hash.includes('data=')) {
+        const encoded = hash.split('data=')[1];
+        const data = decodePayload(encoded);
+        if (data && data.questions && data.questions.length > 0) {
+          isStudentMode = true;
+          questions = data.questions;
+          if (data.timer) {
+            timerSettingInput.value = data.timer;
+          }
+
+          // Lock down UI for students: Hide "Load Sentences" & "Share"
+          btnOpenLoadModal.classList.add('hidden');
+          btnShareRoom.classList.add('hidden');
+          studentModeBadge.classList.remove('hidden');
+          studentModeBadge.classList.add('flex');
+          return true;
+        }
+      }
+      return false;
+    }
+
     // Audio SFX Volume Slider
     sfxSlider.addEventListener('input', () => {
       Tone.start();
@@ -942,6 +1101,8 @@
        MODAL INTERACTIONS (Load & Edit Sentences)
        ==================================================================== */
     function openModal() {
+      if (isStudentMode) return; // Prevent student access
+
       // Sync textareas with current questions
       const sentenceLines = questions.map(q => q.sentence).join('\n');
       const meaningLines = questions.map(q => q.meaning).join('\n');
@@ -981,7 +1142,7 @@
       const meaningLines = inputMeanings.value.split('\n').map(l => l.trim());
 
       if (sentenceLines.length === 0) {
-        alert("Please enter at least one sentence.");
+        showFeedback('Please enter at least one sentence.', 'warning', false);
         return;
       }
 
@@ -995,7 +1156,7 @@
       currentIndex = 0;
       closeModal();
       loadCurrentQuestion();
-      showFeedback(`Loaded ${questions.length} sentences successfully!`, 'info');
+      showFeedback(`Loaded ${questions.length} sentences successfully!`, 'info', false);
     });
 
     /* ====================================================================
@@ -1031,11 +1192,15 @@
        APP INITIALIZATION
        ==================================================================== */
     window.addEventListener('DOMContentLoaded', () => {
-      // Default to Grade 4 English preset (Matches Image 3 sample "Where does she go on Sundays?")
-      questions = PRESETS.grade4.sentences.map((sentence, idx) => ({
-        sentence: sentence,
-        meaning: PRESETS.grade4.meanings[idx]
-      }));
+      const loadedFromUrl = checkStudentModeFromURL();
+
+      if (!loadedFromUrl) {
+        // Default to Grade 4 English preset
+        questions = PRESETS.grade4.sentences.map((sentence, idx) => ({
+          sentence: sentence,
+          meaning: PRESETS.grade4.meanings[idx]
+        }));
+      }
 
       initSortables();
       loadCurrentQuestion();
