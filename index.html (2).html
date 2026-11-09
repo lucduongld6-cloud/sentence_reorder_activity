@@ -1,0 +1,1210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sentence Reorder Learning Studio</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Tone.js for interactive sounds without external assets -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+  <!-- Google Fonts: Inter for general UI, Nunito & Quicksand for clean multilingual (English, Vietnamese), Noto Sans SC for Chinese -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800;900&family=Noto+Sans+SC:wght@500;700;900&family=Quicksand:wght@600;700&display=swap" rel="stylesheet">
+  <!-- SortableJS for smooth drag and reordering on mobile and desktop -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
+  <!-- QRCode.js for generating instant shareable QR codes for mobile students -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+  <style>
+    body {
+      font-family: 'Nunito', 'Noto Sans SC', sans-serif;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: manipulation;
+    }
+
+    /* Word Card Styling: Large text, bold, fills the card nicely */
+    .word-card {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0.35em 0.85em;
+      border-radius: 0.65rem;
+      font-weight: 800;
+      line-height: 1.15;
+      cursor: pointer;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.15), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+      transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+      border: 2px solid rgba(255, 255, 255, 0.45);
+      position: relative;
+    }
+
+    .word-card:hover {
+      transform: translateY(-2px) scale(1.03);
+      box-shadow: 0 8px 12px -2px rgba(0,0,0,0.2);
+    }
+
+    .word-card:active {
+      transform: scale(0.97);
+    }
+
+    /* Target drop area dashed line */
+    .target-drop-zone {
+      min-height: 110px;
+      border: 3px dashed #94a3b8;
+      transition: background-color 0.2s, border-color 0.2s;
+    }
+
+    .sortable-ghost {
+      opacity: 0.35;
+      transform: scale(0.95);
+    }
+
+    /* Slider track accents */
+    input[type=range] {
+      accent-color: #6366f1;
+    }
+
+    /* Custom scrollbar for textareas */
+    textarea::-webkit-scrollbar {
+      width: 8px;
+    }
+    textarea::-webkit-scrollbar-thumb {
+      background: #475569;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+
+<body id="app-body" class="bg-[#fce7f3] min-h-screen text-slate-800 transition-colors duration-300 flex flex-col justify-between">
+
+  <!-- ================= TOP HEADER & CONTROL BAR ================= -->
+  <header class="w-full px-4 py-3 bg-white/70 backdrop-blur-md shadow-sm border-b border-pink-100 sticky top-0 z-30">
+    <div class="max-w-6xl mx-auto flex flex-wrap items-center justify-between gap-3">
+      
+      <!-- Brand & Load Modal Button -->
+      <div class="flex items-center gap-3">
+        <button id="btn-open-load-modal" class="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white font-bold px-4 py-2 rounded-xl shadow-md transition-all text-sm sm:text-base">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+          </svg>
+          <span>Load Sentences</span>
+        </button>
+
+        <!-- Share to Students Button (Teacher mode only) -->
+        <button id="btn-share-room" class="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold px-3.5 py-2 rounded-xl shadow-md transition-all text-sm sm:text-base" title="Generate QR code and student link">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+          </svg>
+          <span class="hidden sm:inline">Share to Students</span>
+          <span class="sm:hidden">Share</span>
+        </button>
+
+        <!-- Student Mode Badge (Visible only in student mode) -->
+        <div id="student-mode-badge" class="hidden items-center gap-1.5 bg-emerald-500/15 border border-emerald-500 text-emerald-700 font-extrabold text-xs px-3 py-1.5 rounded-xl">
+          <span>🎓 Student Practice</span>
+        </div>
+
+        <div class="hidden sm:flex items-center bg-white px-3 py-1.5 rounded-lg border border-slate-200 text-xs text-slate-600 font-semibold shadow-inner">
+          Question <span id="current-q-index" class="text-indigo-600 font-extrabold mx-1">1</span> of <span id="total-q-count" class="font-extrabold ml-1">5</span>
+        </div>
+      </div>
+
+      <!-- Settings Toolbar (Inspired by Image 4) -->
+      <div class="flex flex-wrap items-center gap-2 text-xs font-bold text-white">
+
+        <!-- Theme Selector -->
+        <div class="flex items-center gap-1.5 bg-[#2c3444] px-3 py-1.5 rounded-full shadow border border-slate-700">
+          <span class="text-pink-400">🎨</span>
+          <span class="text-slate-300">Theme:</span>
+          <select id="theme-selector" class="bg-transparent text-pink-300 focus:outline-none cursor-pointer">
+            <option value="pastel" class="bg-slate-800 text-white">🌸 Pastel</option>
+            <option value="warm" class="bg-slate-800 text-white">🍬 Sweet Candy</option>
+            <option value="fresh" class="bg-slate-800 text-white">🍃 Fresh Mint</option>
+            <option value="dark" class="bg-slate-800 text-white">🌙 Dark Night</option>
+          </select>
+        </div>
+
+        <!-- Size Slider -->
+        <div class="flex items-center gap-2 bg-[#2c3444] px-3 py-1.5 rounded-full shadow border border-slate-700">
+          <span class="text-amber-400">🔤</span>
+          <span class="text-slate-300">Size:</span>
+          <input id="font-size-slider" type="range" min="110" max="230" value="160" class="w-16 h-1.5 cursor-pointer rounded-lg bg-slate-600">
+          <span id="font-size-display" class="text-indigo-300 font-mono w-9 text-right">160%</span>
+        </div>
+
+        <!-- Audio: Music & SFX -->
+        <div class="flex items-center gap-2 bg-[#2c3444] px-3 py-1.5 rounded-full shadow border border-slate-700">
+          <span class="text-rose-400">🔊</span>
+          <span class="text-slate-300">BGM:</span>
+          <input id="bgm-volume-slider" type="range" min="0" max="100" value="30" class="w-14 h-1.5 cursor-pointer accent-rose-500 rounded-lg bg-slate-600">
+          <span class="text-emerald-400 ml-1">⚡</span>
+          <span class="text-slate-300">FX:</span>
+          <input id="sfx-volume-slider" type="range" min="0" max="100" value="80" class="w-14 h-1.5 cursor-pointer accent-emerald-400 rounded-lg bg-slate-600">
+        </div>
+
+        <!-- Speed Selector -->
+        <div class="hidden md:flex items-center gap-1.5 bg-[#2c3444] px-3 py-1.5 rounded-full shadow border border-slate-700">
+          <span class="text-emerald-400">⏱️</span>
+          <span class="text-slate-300">Speed:</span>
+          <select id="speed-selector" class="bg-transparent text-emerald-300 focus:outline-none cursor-pointer">
+            <option value="normal" class="bg-slate-800 text-white">Normal</option>
+            <option value="slow" class="bg-slate-800 text-white">Slow</option>
+            <option value="fast" class="bg-slate-800 text-white">Fast</option>
+          </select>
+        </div>
+
+        <!-- Timer Input Setting (User specified seconds) -->
+        <div class="flex items-center gap-1.5 bg-[#2c3444] px-3 py-1 rounded-full shadow border border-slate-700">
+          <span class="text-blue-400">⏰</span>
+          <span class="text-slate-300">Timer:</span>
+          <input id="timer-setting-input" type="number" min="5" max="300" value="60" class="w-12 bg-slate-900 border border-slate-600 text-center text-blue-300 font-mono text-xs rounded px-1 py-0.5 focus:outline-none focus:border-indigo-400" title="Custom seconds per sentence">
+          <span class="text-slate-400 text-xs">s</span>
+        </div>
+
+      </div>
+    </div>
+  </header>
+
+  <!-- ================= MAIN GAME ACTIVITY AREA ================= -->
+  <main class="max-w-5xl w-full mx-auto p-4 sm:p-6 flex-grow flex flex-col justify-center">
+
+    <!-- Top Status Row: Timer Countdown & Vietnamese Translation Meaning -->
+    <div class="w-full bg-white/80 backdrop-blur rounded-2xl shadow-sm border border-slate-200/80 p-4 mb-4">
+      <div class="flex flex-col sm:flex-row items-center justify-between gap-3">
+        <!-- Vietnamese Meaning Display -->
+        <div class="flex items-center gap-3 text-left w-full sm:w-auto">
+          <div class="w-9 h-9 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center font-bold text-lg shrink-0 shadow-sm">
+            🇻🇳
+          </div>
+          <div>
+            <div class="text-xs uppercase font-extrabold text-slate-400 tracking-wider">Vietnamese Meaning</div>
+            <div id="vi-meaning-text" class="text-xl sm:text-2xl md:text-3xl font-black text-slate-800 tracking-wide leading-snug">
+              Tôi sẽ đi thăm ông bà vào ngày mai.
+            </div>
+          </div>
+        </div>
+
+        <!-- Live Countdown Timer -->
+        <div class="flex items-center gap-3 shrink-0 self-end sm:self-auto">
+          <div class="flex items-center gap-1.5 font-mono text-base font-black px-3.5 py-1.5 rounded-xl bg-slate-800 text-emerald-400 border border-slate-700 shadow-inner">
+            <svg class="w-4 h-4 text-emerald-400 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            <span id="timer-countdown">60</span>s
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Target Box Area (Matching Image 2) -->
+    <div class="w-full mb-6">
+      <div class="flex items-center justify-between text-xs sm:text-sm font-bold text-slate-700 mb-2 px-1">
+        <span class="flex items-center gap-1.5 text-rose-500 font-extrabold text-sm sm:text-base">
+          <span class="w-3.5 h-3.5 rounded-full border-2 border-rose-500 flex items-center justify-center text-[8px]">●</span>
+          Sentence Area (Target Box):
+        </span>
+        <span class="text-slate-400 text-xs italic">Tap word or Drag to reorder</span>
+      </div>
+
+      <!-- Target Drop Zone (Dark slate box like image 2) -->
+      <div id="target-box" class="target-drop-zone bg-[#545b6b] rounded-2xl p-4 flex flex-wrap gap-2.5 items-center justify-center transition-all duration-200 shadow-inner min-h-[120px]">
+        <span id="target-empty-prompt" class="text-slate-300/80 font-bold text-sm sm:text-base pointer-events-none select-none text-center">
+          Drop word cards here to build your sentence...
+        </span>
+      </div>
+    </div>
+
+    <!-- Scrambled Words Pool (Matching Image 3: Large, bold words filling the cards) -->
+    <div class="w-full bg-white/70 backdrop-blur rounded-2xl p-4 sm:p-6 shadow-md border border-slate-200/90 mb-6">
+      <div class="text-xs uppercase font-extrabold text-slate-400 tracking-wider mb-3">
+        Available Words (Tap to move into the sentence area):
+      </div>
+      <div id="pool-box" class="flex flex-wrap gap-3 items-center justify-center min-h-[100px] p-2">
+        <!-- Word bubbles generated dynamically -->
+      </div>
+    </div>
+
+    <!-- Control Action Buttons (Reset, Check Answer, Next) (Matching Image 2) -->
+    <div class="flex flex-wrap items-center justify-center gap-3">
+      <button id="btn-reset" class="flex items-center gap-2 bg-[#334155] hover:bg-[#1e293b] active:scale-95 text-white font-extrabold px-6 py-3 rounded-2xl shadow-md transition-all text-sm sm:text-base">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+        </svg>
+        Reset
+      </button>
+
+      <button id="btn-check" class="flex items-center gap-2 bg-[#10b981] hover:bg-[#059669] active:scale-95 text-white font-extrabold px-8 py-3 rounded-2xl shadow-md hover:shadow-lg transition-all text-sm sm:text-base">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
+        </svg>
+        Check Answer
+      </button>
+
+      <button id="btn-next" disabled class="flex items-center gap-2 bg-[#6366f1] opacity-50 cursor-not-allowed hover:bg-[#4f46e5] active:scale-95 text-white font-extrabold px-6 py-3 rounded-2xl shadow-md transition-all text-sm sm:text-base">
+        Next
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Feedback Message Toast Banner -->
+    <div id="feedback-banner" class="mt-5 max-w-lg mx-auto w-full transition-all duration-300 transform scale-95 opacity-0 pointer-events-none text-center py-3 px-6 rounded-xl font-extrabold text-sm shadow-lg">
+      <div id="feedback-content" class="flex items-center justify-center gap-3">
+        <span id="feedback-text">Feedback message will appear here</span>
+        <button id="btn-speak-sentence" type="button" class="hidden items-center justify-center bg-white/25 hover:bg-white/40 active:scale-95 text-white p-2 rounded-xl border border-white/40 shadow-sm transition-all cursor-pointer pointer-events-auto" title="Listen to pronunciation">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+          </svg>
+        </button>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Footer Info -->
+  <footer class="w-full text-center py-3 text-xs text-slate-500 font-semibold">
+    Sentence Reorder Practice • Tap or drag to rearrange words • Fully responsive
+  </footer>
+
+  <!-- ================= MODAL: LOAD & EDIT SENTENCES ================= -->
+  <!-- Designed with dark styling from Image 1, but with 2 columns from Image 5 (Sentences & Meanings) -->
+  <div id="load-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-6 hidden">
+    <div class="bg-[#1e2538] border border-slate-700/80 rounded-3xl max-w-3xl w-full max-h-[92vh] overflow-y-auto shadow-2xl p-5 sm:p-7 text-white relative">
+      
+      <!-- Modal Header -->
+      <div class="flex items-center justify-between pb-4 border-b border-slate-800">
+        <div class="flex items-center gap-2.5">
+          <svg class="w-6 h-6 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+          </svg>
+          <h2 class="text-xl sm:text-2xl font-black text-indigo-200 tracking-tight">Load & Edit Sentences</h2>
+        </div>
+        <button id="btn-close-modal" class="w-9 h-9 rounded-full bg-slate-800 hover:bg-slate-700 flex items-center justify-center text-slate-300 transition-colors">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Presets Buttons (From Image 1) -->
+      <div class="mt-4">
+        <label class="block text-xs uppercase font-extrabold tracking-wider text-slate-400 mb-2">Preset Sentences:</label>
+        <div class="flex flex-wrap gap-2">
+          <button type="button" class="preset-btn bg-[#2b354d] hover:bg-indigo-600/40 border border-slate-700 hover:border-indigo-500 text-sky-300 text-xs sm:text-sm font-bold px-3.5 py-1.5 rounded-xl transition" data-preset="basic">Basic English</button>
+          <button type="button" class="preset-btn bg-[#2b354d] hover:bg-pink-600/40 border border-slate-700 hover:border-pink-500 text-pink-300 text-xs sm:text-sm font-bold px-3.5 py-1.5 rounded-xl transition" data-preset="grade4">Grade 4 English</button>
+          <button type="button" class="preset-btn bg-[#2b354d] hover:bg-amber-600/40 border border-slate-700 hover:border-amber-500 text-amber-300 text-xs sm:text-sm font-bold px-3.5 py-1.5 rounded-xl transition" data-preset="chinese">Chinese (中文)</button>
+          <button type="button" class="preset-btn bg-[#2b354d] hover:bg-emerald-600/40 border border-slate-700 hover:border-emerald-500 text-emerald-300 text-xs sm:text-sm font-bold px-3.5 py-1.5 rounded-xl transition" data-preset="proverbs">Proverbs</button>
+        </div>
+      </div>
+
+      <!-- Tip instructions (From Image 1) -->
+      <div class="mt-3 text-xs text-slate-400 bg-slate-900/60 p-2.5 rounded-xl border border-slate-800">
+        <span class="text-amber-400 font-bold">Tip:</span> For compound phrases or grouped words, use underscores like <code class="text-indigo-300">我早_饭吃两个包_子。</code> or brackets like <code class="text-indigo-300">[my cat]</code> or <code class="text-indigo-300">[早饭]</code> to bundle characters into one bubble.
+      </div>
+
+      <!-- Two-column input area (Shape of Image 5 + Dark Aesthetic of Image 1) -->
+      <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+        
+        <!-- Column 1: Target Sentences -->
+        <div class="flex flex-col">
+          <div class="flex items-center justify-between mb-1.5">
+            <label class="text-xs font-bold text-slate-300 flex items-center gap-1">
+              <span class="text-rose-400">*</span> Sentence list (one per line)
+            </label>
+            <span class="text-[11px] text-slate-400">English / 中文</span>
+          </div>
+          <textarea id="input-sentences" rows="8" class="w-full bg-[#111625] border border-slate-700 rounded-2xl p-3 text-sm font-mono text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition-colors" placeholder="I am going to visit my grandparents tomorrow.&#10;What is your favorite color?&#10;She loves reading books in the library.&#10;Where do you live?&#10;The cat is sleeping on the warm rug."></textarea>
+        </div>
+
+        <!-- Column 2: Vietnamese Meanings -->
+        <div class="flex flex-col">
+          <div class="flex items-center justify-between mb-1.5">
+            <label class="text-xs font-bold text-slate-300 flex items-center gap-1">
+              <span class="text-rose-400">*</span> Vietnamese meaning (one per line)
+            </label>
+            <span class="text-[11px] text-emerald-400">Tiếng Việt</span>
+          </div>
+          <textarea id="input-meanings" rows="8" class="w-full bg-[#111625] border border-slate-700 rounded-2xl p-3 text-sm font-mono text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition-colors" placeholder="Tôi sẽ đi thăm ông bà vào ngày mai.&#10;Màu sắc yêu thích của bạn là gì?&#10;Cô ấy thích đọc sách trong thư viện.&#10;Bạn sống ở đâu?&#10;Con mèo đang ngủ trên chiếc thảm ấm."></textarea>
+        </div>
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="mt-6 flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-slate-800">
+        <div class="text-xs text-slate-400">Lines match one-to-one between both columns.</div>
+        <div class="flex items-center gap-3">
+          <button id="btn-cancel-modal" class="px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-sm font-bold transition">Cancel</button>
+          <button id="btn-save-sentences" class="px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-extrabold shadow-lg shadow-indigo-600/30 transition">Apply & Start</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ================= MODAL: SHARE TO STUDENTS (QR CODE & LINK) ================= -->
+  <div id="share-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-6 hidden">
+    <div class="bg-[#1e2538] border border-slate-700/80 rounded-3xl max-w-md w-full shadow-2xl p-6 sm:p-7 text-white text-center relative">
+      <button id="btn-close-share-modal" class="absolute top-5 right-5 w-9 h-9 rounded-full bg-slate-800 hover:bg-slate-700 flex items-center justify-center text-slate-300 transition-colors">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+
+      <div class="w-12 h-12 bg-emerald-500/20 text-emerald-400 rounded-2xl flex items-center justify-center mx-auto mb-3">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/>
+        </svg>
+      </div>
+
+      <h3 class="text-xl font-black text-slate-100 mb-1">Scan or Share with Students</h3>
+      <p class="text-xs text-slate-400 mb-4">Students opening this link can only solve questions. The answer keys and editor are completely hidden.</p>
+
+      <!-- QR Code Canvas Container -->
+      <div class="bg-white p-4 rounded-2xl inline-block shadow-inner mb-4">
+        <div id="qrcode-container" class="flex justify-center items-center"></div>
+      </div>
+
+      <!-- Share Link Box -->
+      <div class="flex items-center gap-2 bg-[#111625] border border-slate-700 rounded-xl p-2 mb-4 text-left">
+        <input id="student-share-link" type="text" readonly class="w-full bg-transparent text-xs text-slate-300 font-mono focus:outline-none px-2 select-all">
+        <button id="btn-copy-share-link" class="bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white text-xs font-bold px-3 py-2 rounded-lg transition-all shrink-0">
+          Copy Link
+        </button>
+      </div>
+
+      <p id="copy-status-msg" class="text-xs text-emerald-400 font-bold hidden">✓ Link copied to clipboard!</p>
+    </div>
+  </div>
+
+  <!-- Audio Synthesizer & Logic JavaScript -->
+  <script>
+    /* ====================================================================
+       DATA PRESETS & DEFAULT CONTENT
+       ==================================================================== */
+    const PRESETS = {
+      basic: {
+        sentences: [
+          "I am going to visit my grandparents tomorrow.",
+          "What is your favorite color?",
+          "She loves reading books in the library.",
+          "Where do you live?",
+          "The cat is sleeping on the warm rug."
+        ],
+        meanings: [
+          "Tôi sẽ đi thăm ông bà vào ngày mai.",
+          "Màu sắc yêu thích của bạn là gì?",
+          "Cô ấy thích đọc sách trong thư viện.",
+          "Bạn sống ở đâu?",
+          "Con mèo đang ngủ trên chiếc thảm ấm."
+        ]
+      },
+      grade4: {
+        sentences: [
+          "Where does she go on Sundays?",
+          "What time do you get up in the morning?",
+          "My brother likes playing badminton after school.",
+          "How many apples are there on the dining table?",
+          "They went to the beach last weekend."
+        ],
+        meanings: [
+          "Cô ấy đi đâu vào các ngày Chủ nhật?",
+          "Bạn thức dậy lúc mấy giờ vào buổi sáng?",
+          "Anh trai tôi thích chơi cầu lông sau giờ học.",
+          "Có bao nhiêu quả táo ở trên bàn ăn?",
+          "Họ đã đi biển vào cuối tuần trước."
+        ]
+      },
+      chinese: {
+        sentences: [
+          "这些都是我买的。",
+          "我早_饭吃了两个包_子。",
+          "你喜欢学中文吗？",
+          "他每天都去图书馆看书。"
+        ],
+        meanings: [
+          "Những thứ này đều là tôi mua.",
+          "Bữa sáng tôi đã ăn hai cái bánh bao.",
+          "Bạn có thích học tiếng Trung không?",
+          "Anh ấy mỗi ngày đều đến thư viện đọc sách."
+        ]
+      },
+      proverbs: {
+        sentences: [
+          "Practice makes perfect in every language.",
+          "Actions speak louder than words.",
+          "A journey of a thousand miles begins with a single step."
+        ],
+        meanings: [
+          "Có công mài sắt có ngày nên kim (Thực hành tạo nên hoàn hảo).",
+          "Hành động có ý nghĩa hơn lời nói suông.",
+          "Hành trình vạn dặm bắt đầu từ một bước chân."
+        ]
+      }
+    };
+
+    // Pastel palette variations for word bubbles (Large, fills box like image 3)
+    const PASTEL_PALETTES = {
+      pastel: [
+        { bg: "#be185d", text: "#ffffff" }, // deep pink/crimson like image 3
+        { bg: "#b91c1c", text: "#ffffff" }, // crimson red
+        { bg: "#4338ca", text: "#ffffff" }, // deep indigo
+        { bg: "#047857", text: "#ffffff" }, // emerald teal
+        { bg: "#c2410c", text: "#ffffff" }, // terracotta orange
+        { bg: "#7e22ce", text: "#ffffff" }, // rich violet
+        { bg: "#0e7490", text: "#ffffff" }  // ocean cyan
+      ],
+      warm: [
+        { bg: "#db2777", text: "#ffffff" },
+        { bg: "#e11d48", text: "#ffffff" },
+        { bg: "#ea580c", text: "#ffffff" },
+        { bg: "#d97706", text: "#ffffff" },
+        { bg: "#9333ea", text: "#ffffff" }
+      ],
+      fresh: [
+        { bg: "#059669", text: "#ffffff" },
+        { bg: "#0d9488", text: "#ffffff" },
+        { bg: "#2563eb", text: "#ffffff" },
+        { bg: "#4f46e5", text: "#ffffff" },
+        { bg: "#16a34a", text: "#ffffff" }
+      ],
+      dark: [
+        { bg: "#334155", text: "#f8fafc" },
+        { bg: "#1e293b", text: "#f1f5f9" },
+        { bg: "#475569", text: "#ffffff" },
+        { bg: "#3f3f46", text: "#fafafa" }
+      ]
+    };
+
+    /* ====================================================================
+       STATE VARIABLES
+       ==================================================================== */
+    let questions = [];
+    let currentIndex = 0;
+    let timerValue = 60; // default seconds
+    let remainingTime = 60;
+    let timerInterval = null;
+    let soundEnabled = true;
+    let synth = null;
+    let musicLoop = null;
+    let scalePercent = 160;
+    let currentTheme = 'pastel';
+    let sortableTarget = null;
+    let isCurrentQuestionAnsweredCorrectly = false;
+    let isStudentMode = false;
+    let qrcodeInstance = null;
+
+    // DOM Elements
+    const bodyEl = document.getElementById('app-body');
+    const targetBox = document.getElementById('target-box');
+    const poolBox = document.getElementById('pool-box');
+    const targetEmptyPrompt = document.getElementById('target-empty-prompt');
+    const viMeaningText = document.getElementById('vi-meaning-text');
+    const timerCountdownEl = document.getElementById('timer-countdown');
+    const timerSettingInput = document.getElementById('timer-setting-input');
+    const fontSizeSlider = document.getElementById('font-size-slider');
+    const fontSizeDisplay = document.getElementById('font-size-display');
+    const themeSelector = document.getElementById('theme-selector');
+    const speedSelector = document.getElementById('speed-selector');
+    const bgmSlider = document.getElementById('bgm-volume-slider');
+    const sfxSlider = document.getElementById('sfx-volume-slider');
+    const currentQIndexEl = document.getElementById('current-q-index');
+    const totalQCountEl = document.getElementById('total-q-count');
+    const feedbackBanner = document.getElementById('feedback-banner');
+    const feedbackText = document.getElementById('feedback-text');
+    const btnSpeakSentence = document.getElementById('btn-speak-sentence');
+
+    const btnCheck = document.getElementById('btn-check');
+    const btnReset = document.getElementById('btn-reset');
+    const btnNext = document.getElementById('btn-next');
+
+    // Share Modal elements
+    const shareModal = document.getElementById('share-modal');
+    const btnShareRoom = document.getElementById('btn-share-room');
+    const btnCloseShareModal = document.getElementById('btn-close-share-modal');
+    const studentShareLinkInput = document.getElementById('student-share-link');
+    const btnCopyShareLink = document.getElementById('btn-copy-share-link');
+    const copyStatusMsg = document.getElementById('copy-status-msg');
+    const qrcodeContainer = document.getElementById('qrcode-container');
+    const studentModeBadge = document.getElementById('student-mode-badge');
+
+    // Modal elements
+    const loadModal = document.getElementById('load-modal');
+    const btnOpenLoadModal = document.getElementById('btn-open-load-modal');
+    const btnCloseModal = document.getElementById('btn-close-modal');
+    const btnCancelModal = document.getElementById('btn-cancel-modal');
+    const btnSaveSentences = document.getElementById('btn-save-sentences');
+    const inputSentences = document.getElementById('input-sentences');
+    const inputMeanings = document.getElementById('input-meanings');
+    const presetButtons = document.querySelectorAll('.preset-btn');
+
+    /* ====================================================================
+       INITIAL AUDIO SETUP (Tone.js)
+       ==================================================================== */
+    function initToneAudio() {
+      if (synth) return;
+      try {
+        synth = new Tone.PolySynth(Tone.Synth).toDestination();
+        synth.volume.value = -6; // Initial SFX volume
+      } catch (e) {
+        console.warn("Audio init deferred until user gesture", e);
+      }
+    }
+
+    function playToneSound(type) {
+      if (!soundEnabled) return;
+      try {
+        if (Tone.context.state !== 'running') {
+          Tone.start();
+        }
+        if (!synth) initToneAudio();
+
+        const sfxVol = parseInt(sfxSlider.value, 10);
+        if (sfxVol === 0) return;
+        // Map 0-100 to decibels (-30 to +2)
+        synth.volume.value = (sfxVol / 100) * 32 - 30;
+
+        const now = Tone.now();
+        if (type === 'tap') {
+          synth.triggerAttackRelease("C5", "32n", now, 0.4);
+        } else if (type === 'correct') {
+          synth.triggerAttackRelease(["C5", "E5", "G5", "C6"], "8n", now);
+        } else if (type === 'wrong') {
+          synth.triggerAttackRelease(["Eb4", "D4"], "12n", now);
+        } else if (type === 'timeout') {
+          synth.triggerAttackRelease(["F3", "Db3"], "8n", now);
+        }
+      } catch (err) {
+        // Fallback or ignore audio errors on blocked contexts
+      }
+    }
+
+    /* ====================================================================
+       SENTENCE PARSER (Supports brackets [word_group], underscores word_word, and spaces)
+       ==================================================================== */
+    function parseSentenceIntoTokens(sentence) {
+      const tokens = [];
+      const trimmed = sentence.trim();
+
+      // Detect if text contains Chinese / CJK characters or punctuation
+      const hasChinese = /[\u4e00-\u9fa5\u3000-\u303f\uff01-\uff60]/.test(trimmed);
+
+      if (hasChinese) {
+        // Step 1: Handle bracket groups like [my cat] or [早饭]
+        const placeholders = [];
+        let str = trimmed.replace(/\[(.*?)\]/g, (match, content) => {
+          placeholders.push(content);
+          return `__PH${placeholders.length - 1}__`;
+        });
+
+        // Step 2: Handle explicit underscore connections.
+        // Match only characters directly adjacent to underscore (e.g. 早_饭, 包_子, 我_早_饭)
+        // Does NOT greedily capture un-underscored characters before or after!
+        str = str.replace(/([^\s_]+(?:_[^\s_]+)+)/g, (match) => {
+          // Keep only the adjacent words connected by _, not surrounding un-connected text
+          // Example: "我早_饭" -> "我" + "早_饭"
+          return match;
+        });
+
+        // Precise scanner: scan through the string
+        let i = 0;
+        while (i < str.length) {
+          // Check placeholder
+          if (str.startsWith('__PH', i)) {
+            const endIdx = str.indexOf('__', i + 4);
+            if (endIdx !== -1) {
+              const phIdx = parseInt(str.substring(i + 4, endIdx), 10);
+              const val = placeholders[phIdx] || '';
+              tokens.push({ raw: val, display: val });
+              i = endIdx + 2;
+              continue;
+            }
+          }
+
+          // Skip whitespaces
+          if (/\s/.test(str[i])) {
+            i++;
+            continue;
+          }
+
+          // Check if current position starts an underscore compound: char_char...
+          // Look ahead to see if there is an underscore connected sequence starting here
+          if (i + 1 < str.length && str[i + 1] === '_') {
+            let compound = str[i];
+            let ptr = i + 1;
+            while (ptr < str.length && (str[ptr] === '_' || (ptr > 0 && str[ptr - 1] === '_') || (ptr + 1 < str.length && str[ptr + 1] === '_'))) {
+              if (str[ptr] !== '_') {
+                compound += str[ptr];
+              }
+              ptr++;
+            }
+            tokens.push({ raw: compound, display: compound });
+            i = ptr;
+            continue;
+          }
+
+          // If next is not underscore and current is not connected, treat as single character
+          const char = str[i];
+          if (char !== '_') {
+            tokens.push({ raw: char, display: char });
+          }
+          i++;
+        }
+
+        return tokens;
+      }
+
+      // Default parser for alphabetic languages (English, Vietnamese, etc.)
+      const bracketRegex = /\[(.*?)\]|([^\s\[\]]+)/g;
+      let match;
+
+      while ((match = bracketRegex.exec(trimmed)) !== null) {
+        let token = match[1] !== undefined ? match[1] : match[2];
+        if (!token) continue;
+
+        const displayText = token.replace(/_/g, ' ');
+        tokens.push({
+          raw: token,
+          display: displayText
+        });
+      }
+
+      return tokens;
+    }
+
+    /* ====================================================================
+       SHUFFLE HELPER
+       ==================================================================== */
+    function shuffleArray(arr) {
+      const copy = [...arr];
+      for (let i = copy.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [copy[i], copy[j]] = [copy[j], copy[i]];
+      }
+      return copy;
+    }
+
+    /* ====================================================================
+       RENDER CURRENT QUESTION
+       ==================================================================== */
+    function loadCurrentQuestion() {
+      if (questions.length === 0) return;
+      const current = questions[currentIndex];
+      isCurrentQuestionAnsweredCorrectly = false;
+
+      // Update Header counts
+      currentQIndexEl.textContent = currentIndex + 1;
+      totalQCountEl.textContent = questions.length;
+
+      // Update Meaning
+      viMeaningText.textContent = current.meaning || "(Chưa có nghĩa tiếng Việt)";
+
+      // Reset Target and buttons
+      targetBox.innerHTML = '';
+      targetBox.appendChild(targetEmptyPrompt);
+      targetEmptyPrompt.style.display = 'block';
+
+      btnNext.disabled = true;
+      btnNext.classList.add('opacity-50', 'cursor-not-allowed');
+      hideFeedback();
+
+      // Prepare Scrambled Words
+      const originalTokens = parseSentenceIntoTokens(current.sentence);
+      let shuffledTokens = shuffleArray(originalTokens);
+
+      // Avoid edge case where shuffle is accidentally the exact original sentence
+      if (shuffledTokens.length > 1 && shuffledTokens.every((tok, i) => tok.display === originalTokens[i].display)) {
+        shuffledTokens.reverse();
+      }
+
+      poolBox.innerHTML = '';
+      const palette = PASTEL_PALETTES[currentTheme] || PASTEL_PALETTES.pastel;
+
+      shuffledTokens.forEach((tokenObj, idx) => {
+        const color = palette[idx % palette.length];
+        const card = createWordCard(tokenObj.display, color);
+        poolBox.appendChild(card);
+      });
+
+      // Reset & Start Timer
+      resetTimer();
+    }
+
+    /* ====================================================================
+       CREATE WORD CARD COMPONENT
+       - Large, bold font filling the card like Image 3
+       - Vibrant pastel tones
+       - Tap to toggle between Pool and Target
+       - Draggable into Target box
+       ==================================================================== */
+    function createWordCard(text, color) {
+      const card = document.createElement('div');
+      card.className = 'word-card text-white select-none transition-transform active:scale-95';
+      card.style.backgroundColor = color.bg;
+      card.style.color = color.text;
+      card.dataset.word = text;
+
+      // Set dynamic font size based on the slider
+      applyCardFontSize(card, scalePercent);
+
+      // Inner text span
+      const span = document.createElement('span');
+      span.textContent = text;
+      card.appendChild(span);
+
+      // Click to move directly between pool and target box
+      card.addEventListener('click', (e) => {
+        playToneSound('tap');
+        if (card.parentElement === poolBox) {
+          // Move from pool into target
+          targetEmptyPrompt.style.display = 'none';
+          targetBox.appendChild(card);
+        } else {
+          // Move from target back to pool
+          poolBox.appendChild(card);
+          if (targetBox.querySelectorAll('.word-card').length === 0) {
+            targetEmptyPrompt.style.display = 'block';
+          }
+        }
+      });
+
+      return card;
+    }
+
+    function applyCardFontSize(card, percent) {
+      // Base rem scale (1.1rem at 100%, up to ~2.5rem at 230%)
+      const sizeRem = (1.1 * (percent / 100)).toFixed(2);
+      card.style.fontSize = `${sizeRem}rem`;
+    }
+
+    function updateAllCardsSize() {
+      const cards = document.querySelectorAll('.word-card');
+      cards.forEach(card => applyCardFontSize(card, scalePercent));
+    }
+
+    /* ====================================================================
+       TIMER ENGINE
+       ==================================================================== */
+    function resetTimer() {
+      clearInterval(timerInterval);
+      // Read user setting
+      const customSeconds = parseInt(timerSettingInput.value, 10);
+      remainingTime = (!isNaN(customSeconds) && customSeconds > 0) ? customSeconds : 60;
+      updateTimerDisplay();
+
+      timerInterval = setInterval(() => {
+        remainingTime--;
+        updateTimerDisplay();
+
+        if (remainingTime <= 0) {
+          clearInterval(timerInterval);
+          handleTimeOut();
+        }
+      }, 1000);
+    }
+
+    function updateTimerDisplay() {
+      timerCountdownEl.textContent = remainingTime;
+      if (remainingTime <= 10) {
+        timerCountdownEl.parentElement.classList.add('text-rose-400', 'border-rose-500');
+        timerCountdownEl.parentElement.classList.remove('text-emerald-400');
+      } else {
+        timerCountdownEl.parentElement.classList.remove('text-rose-400', 'border-rose-500');
+        timerCountdownEl.parentElement.classList.add('text-emerald-400');
+      }
+    }
+
+    function handleTimeOut() {
+      playToneSound('timeout');
+      showFeedback('⏳ Time is up! Try to complete the sentence.', 'warning');
+    }
+
+    /* ====================================================================
+       CHECK ANSWER VALIDATION
+       ==================================================================== */
+    btnCheck.addEventListener('click', () => {
+      Tone.start();
+      const current = questions[currentIndex];
+      const targetCards = targetBox.querySelectorAll('.word-card');
+      const assembledTokens = Array.from(targetCards).map(c => c.dataset.word.trim());
+
+      // Target original tokens
+      const originalTokens = parseSentenceIntoTokens(current.sentence).map(t => t.display.trim());
+
+      // Compare
+      const isComplete = assembledTokens.length === originalTokens.length;
+      const isCorrect = isComplete && assembledTokens.every((word, idx) => word === originalTokens[idx]);
+
+      if (isCorrect) {
+        clearInterval(timerInterval);
+        isCurrentQuestionAnsweredCorrectly = true;
+        playToneSound('correct');
+
+        // Visual success with speaker button enabled
+        showFeedback('🎉 Awesome! Correct answer! Click "Next" to continue.', 'success', true);
+        btnNext.disabled = false;
+        btnNext.classList.remove('opacity-50', 'cursor-not-allowed');
+
+        // Add bounce celebration on cards
+        targetCards.forEach(c => {
+          c.classList.add('ring-4', 'ring-emerald-300');
+        });
+      } else {
+        playToneSound('wrong');
+        // Visual failure: user must try again
+        showFeedback('❌ Incorrect order! Please adjust words and try again.', 'error', false);
+
+        // Flash target area
+        targetBox.classList.add('ring-4', 'ring-rose-400');
+        setTimeout(() => {
+          targetBox.classList.remove('ring-4', 'ring-rose-400');
+        }, 600);
+      }
+    });
+
+    /* ====================================================================
+       TEXT-TO-SPEECH (SPEECH SYNTHESIS)
+       ==================================================================== */
+    function speakCurrentSentence() {
+      if (!('speechSynthesis' in window)) return;
+      window.speechSynthesis.cancel(); // Stop any ongoing speech
+
+      const current = questions[currentIndex];
+      if (!current) return;
+
+      // Clean brackets, underscores and extra marks for natural reading
+      const cleanSentence = current.sentence
+        .replace(/[\[\]]/g, '')
+        .replace(/_/g, ' ')
+        .trim();
+
+      const utterance = new SpeechSynthesisUtterance(cleanSentence);
+
+      // Detect if Chinese characters are present
+      const isChinese = /[\u4e00-\u9fa5]/.test(cleanSentence);
+      utterance.lang = isChinese ? 'zh-CN' : 'en-US';
+
+      // Set playback speed according to the speed selector
+      const speedVal = speedSelector.value;
+      utterance.rate = speedVal === 'slow' ? 0.75 : (speedVal === 'fast' ? 1.25 : 0.95);
+
+      // Animate speaker icon while playing
+      btnSpeakSentence.classList.add('animate-pulse', 'bg-white/50');
+      utterance.onend = () => {
+        btnSpeakSentence.classList.remove('animate-pulse', 'bg-white/50');
+      };
+      utterance.onerror = () => {
+        btnSpeakSentence.classList.remove('animate-pulse', 'bg-white/50');
+      };
+
+      window.speechSynthesis.speak(utterance);
+    }
+
+    btnSpeakSentence.addEventListener('click', (e) => {
+      e.stopPropagation();
+      speakCurrentSentence();
+    });
+
+    /* ====================================================================
+       RESET CURRENT QUESTION
+       ==================================================================== */
+    btnReset.addEventListener('click', () => {
+      Tone.start();
+      loadCurrentQuestion();
+      showFeedback('Question has been reset.', 'info', false);
+    });
+
+    /* ====================================================================
+       NEXT BUTTON
+       ==================================================================== */
+    btnNext.addEventListener('click', () => {
+      if (!isCurrentQuestionAnsweredCorrectly) return;
+      if (currentIndex < questions.length - 1) {
+        currentIndex++;
+        loadCurrentQuestion();
+      } else {
+        clearInterval(timerInterval);
+        showFeedback('🏆 Congratulations! You completed all sentences in this set!', 'success', false);
+      }
+    });
+
+    /* ====================================================================
+       FEEDBACK BANNER HELPER
+       ==================================================================== */
+    function showFeedback(msg, type, showSpeaker = false) {
+      feedbackText.textContent = msg;
+      feedbackBanner.className = 'mt-5 max-w-lg mx-auto w-full transition-all duration-300 py-3 px-6 rounded-2xl font-black text-sm shadow-lg text-center transform scale-100 opacity-100 pointer-events-auto';
+
+      if (showSpeaker) {
+        btnSpeakSentence.classList.remove('hidden');
+        btnSpeakSentence.classList.add('inline-flex');
+      } else {
+        btnSpeakSentence.classList.add('hidden');
+        btnSpeakSentence.classList.remove('inline-flex');
+      }
+
+      if (type === 'success') {
+        feedbackBanner.classList.add('bg-emerald-500', 'text-white', 'shadow-emerald-500/30');
+      } else if (type === 'error') {
+        feedbackBanner.classList.add('bg-rose-500', 'text-white', 'shadow-rose-500/30');
+      } else if (type === 'warning') {
+        feedbackBanner.classList.add('bg-amber-500', 'text-slate-900', 'shadow-amber-500/30');
+      } else {
+        feedbackBanner.classList.add('bg-indigo-600', 'text-white');
+      }
+    }
+
+    function hideFeedback() {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
+      btnSpeakSentence.classList.add('hidden');
+      btnSpeakSentence.classList.remove('inline-flex');
+      feedbackBanner.className = 'mt-5 max-w-lg mx-auto w-full transition-all duration-300 py-3 px-6 rounded-xl font-extrabold text-sm text-center transform scale-95 opacity-0 pointer-events-none';
+    }
+
+    /* ====================================================================
+       SETTINGS CONTROLS LISTENERS (Image 4 Features)
+       ==================================================================== */
+    // Font Size Slider
+    fontSizeSlider.addEventListener('input', (e) => {
+      scalePercent = e.target.value;
+      fontSizeDisplay.textContent = `${scalePercent}%`;
+      updateAllCardsSize();
+    });
+
+    // Theme selector
+    themeSelector.addEventListener('change', (e) => {
+      currentTheme = e.target.value;
+      if (currentTheme === 'pastel') {
+        bodyEl.className = "bg-[#fce7f3] min-h-screen text-slate-800 transition-colors duration-300 flex flex-col justify-between";
+      } else if (currentTheme === 'warm') {
+        bodyEl.className = "bg-[#ffedd5] min-h-screen text-slate-800 transition-colors duration-300 flex flex-col justify-between";
+      } else if (currentTheme === 'fresh') {
+        bodyEl.className = "bg-[#ecfdf5] min-h-screen text-slate-800 transition-colors duration-300 flex flex-col justify-between";
+      } else if (currentTheme === 'dark') {
+        bodyEl.className = "bg-[#0f172a] min-h-screen text-slate-100 transition-colors duration-300 flex flex-col justify-between";
+      }
+      loadCurrentQuestion();
+    });
+
+    // Timer Setting input change
+    timerSettingInput.addEventListener('change', () => {
+      resetTimer();
+    });
+
+    /* ====================================================================
+       STUDENT SHARING (QR CODE & LINK GENERATION)
+       ==================================================================== */
+    function encodePayload(obj) {
+      const jsonStr = JSON.stringify(obj);
+      return encodeURIComponent(btoa(unescape(encodeURIComponent(jsonStr))));
+    }
+
+    function decodePayload(encoded) {
+      try {
+        const jsonStr = decodeURIComponent(escape(atob(decodeURIComponent(encoded))));
+        return JSON.parse(jsonStr);
+      } catch (e) {
+        console.error("Payload decoding error", e);
+        return null;
+      }
+    }
+
+    function generateStudentLink() {
+      const payload = {
+        mode: 'student',
+        timer: parseInt(timerSettingInput.value, 10) || 60,
+        questions: questions
+      };
+      const encoded = encodePayload(payload);
+      const baseUrl = window.location.origin + window.location.pathname;
+      return `${baseUrl}#data=${encoded}`;
+    }
+
+    function openShareModal() {
+      const shareUrl = generateStudentLink();
+      studentShareLinkInput.value = shareUrl;
+      copyStatusMsg.classList.add('hidden');
+
+      // Generate or update QR Code
+      qrcodeContainer.innerHTML = '';
+      qrcodeInstance = new QRCode(qrcodeContainer, {
+        text: shareUrl,
+        width: 190,
+        height: 190,
+        colorDark: "#0f172a",
+        colorLight: "#ffffff",
+        correctLevel: QRCode.CorrectLevel.M
+      });
+
+      shareModal.classList.remove('hidden');
+    }
+
+    function closeShareModal() {
+      shareModal.classList.add('hidden');
+    }
+
+    btnShareRoom.addEventListener('click', openShareModal);
+    btnCloseShareModal.addEventListener('click', closeShareModal);
+    shareModal.addEventListener('click', (e) => {
+      if (e.target === shareModal) closeShareModal();
+    });
+
+    btnCopyShareLink.addEventListener('click', () => {
+      studentShareLinkInput.select();
+      studentShareLinkInput.setSelectionRange(0, 99999);
+      try {
+        document.execCommand('copy');
+        copyStatusMsg.classList.remove('hidden');
+        setTimeout(() => {
+          copyStatusMsg.classList.add('hidden');
+        }, 2500);
+      } catch (err) {
+        console.warn("Could not copy link", err);
+      }
+    });
+
+    // Check if opening URL has student payload in hash
+    function checkStudentModeFromURL() {
+      const hash = window.location.hash;
+      if (hash && hash.includes('data=')) {
+        const encoded = hash.split('data=')[1];
+        const data = decodePayload(encoded);
+        if (data && data.questions && data.questions.length > 0) {
+          isStudentMode = true;
+          questions = data.questions;
+          if (data.timer) {
+            timerSettingInput.value = data.timer;
+          }
+
+          // Lock down UI for students: Hide "Load Sentences" & "Share"
+          btnOpenLoadModal.classList.add('hidden');
+          btnShareRoom.classList.add('hidden');
+          studentModeBadge.classList.remove('hidden');
+          studentModeBadge.classList.add('flex');
+          return true;
+        }
+      }
+      return false;
+    }
+
+    // Audio SFX Volume Slider
+    sfxSlider.addEventListener('input', () => {
+      Tone.start();
+      playToneSound('tap');
+    });
+
+    /* ====================================================================
+       MODAL INTERACTIONS (Load & Edit Sentences)
+       ==================================================================== */
+    function openModal() {
+      if (isStudentMode) return; // Prevent student access
+
+      // Sync textareas with current questions
+      const sentenceLines = questions.map(q => q.sentence).join('\n');
+      const meaningLines = questions.map(q => q.meaning).join('\n');
+      inputSentences.value = sentenceLines;
+      inputMeanings.value = meaningLines;
+
+      loadModal.classList.remove('hidden');
+    }
+
+    function closeModal() {
+      loadModal.classList.add('hidden');
+    }
+
+    btnOpenLoadModal.addEventListener('click', openModal);
+    btnCloseModal.addEventListener('click', closeModal);
+    btnCancelModal.addEventListener('click', closeModal);
+
+    // Click backdrop to close
+    loadModal.addEventListener('click', (e) => {
+      if (e.target === loadModal) closeModal();
+    });
+
+    // Load Presets
+    presetButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const key = btn.dataset.preset;
+        if (PRESETS[key]) {
+          inputSentences.value = PRESETS[key].sentences.join('\n');
+          inputMeanings.value = PRESETS[key].meanings.join('\n');
+        }
+      });
+    });
+
+    // Save & Apply Sentences
+    btnSaveSentences.addEventListener('click', () => {
+      const sentenceLines = inputSentences.value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+      const meaningLines = inputMeanings.value.split('\n').map(l => l.trim());
+
+      if (sentenceLines.length === 0) {
+        showFeedback('Please enter at least one sentence.', 'warning', false);
+        return;
+      }
+
+      questions = sentenceLines.map((sentence, idx) => {
+        return {
+          sentence: sentence,
+          meaning: meaningLines[idx] || ""
+        };
+      });
+
+      currentIndex = 0;
+      closeModal();
+      loadCurrentQuestion();
+      showFeedback(`Loaded ${questions.length} sentences successfully!`, 'info', false);
+    });
+
+    /* ====================================================================
+       DRAG AND DROP REORDERING INITIALIZATION (SortableJS)
+       ==================================================================== */
+    function initSortables() {
+      // Sortable for Target Box (Allows rearranging order of words)
+      sortableTarget = new Sortable(targetBox, {
+        group: 'shared-words',
+        animation: 180,
+        ghostClass: 'sortable-ghost',
+        draggable: '.word-card',
+        onAdd: function () {
+          targetEmptyPrompt.style.display = 'none';
+        },
+        onRemove: function () {
+          if (targetBox.querySelectorAll('.word-card').length === 0) {
+            targetEmptyPrompt.style.display = 'block';
+          }
+        }
+      });
+
+      // Sortable for Pool Box (Allows dragging back into pool or rearranging)
+      new Sortable(poolBox, {
+        group: 'shared-words',
+        animation: 180,
+        ghostClass: 'sortable-ghost',
+        draggable: '.word-card'
+      });
+    }
+
+    /* ====================================================================
+       APP INITIALIZATION
+       ==================================================================== */
+    window.addEventListener('DOMContentLoaded', () => {
+      const loadedFromUrl = checkStudentModeFromURL();
+
+      if (!loadedFromUrl) {
+        // Default to Grade 4 English preset
+        questions = PRESETS.grade4.sentences.map((sentence, idx) => ({
+          sentence: sentence,
+          meaning: PRESETS.grade4.meanings[idx]
+        }));
+      }
+
+      initSortables();
+      loadCurrentQuestion();
+    });
+  </script>
+</body>
+</html>
