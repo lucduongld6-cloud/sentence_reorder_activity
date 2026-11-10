@@ -16,6 +16,8 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
   <!-- QRCode.js for generating instant shareable QR codes for mobile students -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <!-- pinyin-pro CDN for accurate Chinese Pinyin tone marks -->
+  <script src="https://cdn.jsdelivr.net/npm/pinyin-pro@3.18.2/dist/index.js"></script>
 
   <style>
     body {
@@ -55,6 +57,16 @@
       min-height: 110px;
       border: 3px dashed #94a3b8;
       transition: background-color 0.2s, border-color 0.2s;
+    }
+
+    /* Pinyin container inside card */
+    .word-pinyin {
+      font-size: 0.42em;
+      line-height: 1;
+      font-weight: 700;
+      opacity: 0.92;
+      margin-bottom: 2px;
+      letter-spacing: 0.04em;
     }
 
     .sortable-ghost {
@@ -125,6 +137,15 @@
             <option value="fresh" class="bg-slate-800 text-white">🍃 Fresh Mint</option>
             <option value="dark" class="bg-slate-800 text-white">🌙 Dark Night</option>
           </select>
+        </div>
+
+        <!-- Pinyin Toggle (for Chinese) -->
+        <div id="pinyin-toggle-container" class="flex items-center gap-1.5 bg-[#2c3444] px-3 py-1.5 rounded-full shadow border border-slate-700">
+          <span class="text-teal-400">🔤</span>
+          <span class="text-slate-300">Pinyin:</span>
+          <button id="btn-toggle-pinyin" type="button" class="relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none bg-emerald-500">
+            <span id="pinyin-toggle-circle" class="pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out translate-x-4"></span>
+          </button>
         </div>
 
         <!-- Size Slider -->
@@ -495,6 +516,7 @@
     let isCurrentQuestionAnsweredCorrectly = false;
     let isStudentMode = false;
     let qrcodeInstance = null;
+    let showPinyin = true; // Pinyin toggle state
 
     // DOM Elements
     const bodyEl = document.getElementById('app-body');
@@ -515,6 +537,8 @@
     const feedbackBanner = document.getElementById('feedback-banner');
     const feedbackText = document.getElementById('feedback-text');
     const btnSpeakSentence = document.getElementById('btn-speak-sentence');
+    const btnTogglePinyin = document.getElementById('btn-toggle-pinyin');
+    const pinyinToggleCircle = document.getElementById('pinyin-toggle-circle');
 
     const btnCheck = document.getElementById('btn-check');
     const btnReset = document.getElementById('btn-reset');
@@ -738,21 +762,45 @@
        - Vibrant pastel tones
        - Tap to toggle between Pool and Target
        - Draggable into Target box
+       - Displays Pinyin together in the same card if enabled
        ==================================================================== */
     function createWordCard(text, color) {
       const card = document.createElement('div');
-      card.className = 'word-card text-white select-none transition-transform active:scale-95';
+      card.className = 'word-card text-white select-none transition-transform active:scale-95 flex-col leading-none';
       card.style.backgroundColor = color.bg;
       card.style.color = color.text;
       card.dataset.word = text;
 
-      // Set dynamic font size based on the slider
-      applyCardFontSize(card, scalePercent);
+      // Check if word contains Chinese characters
+      const isChinese = /[\u4e00-\u9fa5]/.test(text);
+      if (isChinese) {
+        let pinyinText = '';
+        if (window.pinyinPro && window.pinyinPro.pinyin) {
+          try {
+            pinyinText = window.pinyinPro.pinyin(text);
+          } catch (e) {
+            pinyinText = '';
+          }
+        }
+        if (pinyinText) {
+          const pinyinSpan = document.createElement('span');
+          pinyinSpan.className = 'word-pinyin';
+          pinyinSpan.textContent = pinyinText;
+          if (!showPinyin) {
+            pinyinSpan.style.display = 'none';
+          }
+          card.appendChild(pinyinSpan);
+        }
+      }
 
       // Inner text span
       const span = document.createElement('span');
+      span.className = 'word-text';
       span.textContent = text;
       card.appendChild(span);
+
+      // Set dynamic font size based on the slider
+      applyCardFontSize(card, scalePercent);
 
       // Click to move directly between pool and target box
       card.addEventListener('click', (e) => {
@@ -783,6 +831,23 @@
       const cards = document.querySelectorAll('.word-card');
       cards.forEach(card => applyCardFontSize(card, scalePercent));
     }
+
+    /* Pinyin Toggle Handler */
+    btnTogglePinyin.addEventListener('click', () => {
+      showPinyin = !showPinyin;
+      if (showPinyin) {
+        btnTogglePinyin.className = "relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none bg-emerald-500";
+        pinyinToggleCircle.className = "pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out translate-x-4";
+      } else {
+        btnTogglePinyin.className = "relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none bg-slate-600";
+        pinyinToggleCircle.className = "pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out translate-x-0";
+      }
+
+      // Toggle display on all rendered pinyin spans
+      document.querySelectorAll('.word-pinyin').forEach(el => {
+        el.style.display = showPinyin ? 'block' : 'none';
+      });
+    });
 
     /* ====================================================================
        TIMER ENGINE
