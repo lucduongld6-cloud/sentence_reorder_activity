@@ -8,7 +8,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Tone.js for interactive sounds without external assets -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
-  <!-- Google Fonts: Inter for general UI, Nunito & Quicksand for clean multilingual (English, Vietnamese), Noto Sans SC for Chinese -->
+  <!-- Google Fonts: Inter for general UI, Nunito & Quicksand for clean multilingual, Noto Sans SC for Chinese -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800;900&family=Noto+Sans+SC:wght@500;700;900&family=Quicksand:wght@600;700&display=swap" rel="stylesheet">
@@ -96,18 +96,27 @@
   <header class="w-full px-4 py-3 bg-white/70 backdrop-blur-md shadow-sm border-b border-pink-100 sticky top-0 z-30">
     <div class="max-w-6xl mx-auto flex flex-wrap items-center justify-between gap-3">
       
-      <!-- Brand & Load Modal Button -->
-      <div class="flex items-center gap-3">
-        <button id="btn-open-load-modal" class="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white font-bold px-4 py-2 rounded-xl shadow-md transition-all text-sm sm:text-base">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <!-- Brand & Action Buttons -->
+      <div class="flex items-center flex-wrap gap-2.5">
+        <button id="btn-open-load-modal" class="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white font-bold px-3.5 py-2 rounded-xl shadow-md transition-all text-xs sm:text-sm">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
           </svg>
           <span>Load Sentences</span>
         </button>
 
+        <!-- Shuffle Questions Button -->
+        <button id="btn-shuffle-questions" class="flex items-center gap-1.5 bg-amber-500 hover:bg-amber-600 active:scale-95 text-white font-bold px-3 py-2 rounded-xl shadow-md transition-all text-xs sm:text-sm" title="Shuffle the order of sentences">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M4 4h4l3 5m0 0l3 5h6m-6-10l-3 5m0 0L8 19H4m14-15l3 3m0 0l-3 3m3-3h-5m2 12l3 3m0 0l-3 3m3-3h-5"/>
+          </svg>
+          <span class="hidden sm:inline">Shuffle Questions</span>
+          <span class="sm:hidden">Shuffle</span>
+        </button>
+
         <!-- Share to Students Button (Teacher mode only) -->
-        <button id="btn-share-room" class="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold px-3.5 py-2 rounded-xl shadow-md transition-all text-sm sm:text-base" title="Generate QR code and student link">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <button id="btn-share-room" class="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold px-3 py-2 rounded-xl shadow-md transition-all text-xs sm:text-sm" title="Generate QR code and student link">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
           </svg>
           <span class="hidden sm:inline">Share to Students</span>
@@ -124,7 +133,7 @@
         </div>
       </div>
 
-      <!-- Settings Toolbar (Inspired by Image 4) -->
+      <!-- Settings Toolbar -->
       <div class="flex flex-wrap items-center gap-2 text-xs font-bold text-white">
 
         <!-- Theme Selector -->
@@ -177,7 +186,7 @@
           </select>
         </div>
 
-        <!-- Timer Input Setting (User specified seconds) -->
+        <!-- Timer Input Setting -->
         <div class="flex items-center gap-1.5 bg-[#2c3444] px-3 py-1 rounded-full shadow border border-slate-700">
           <span class="text-blue-400">⏰</span>
           <span class="text-slate-300">Timer:</span>
@@ -220,7 +229,7 @@
       </div>
     </div>
 
-    <!-- Target Box Area (Matching Image 2) -->
+    <!-- Target Box Area -->
     <div class="w-full mb-6">
       <div class="flex items-center justify-between text-xs sm:text-sm font-bold text-slate-700 mb-2 px-1">
         <span class="flex items-center gap-1.5 text-rose-500 font-extrabold text-sm sm:text-base">
@@ -230,7 +239,7 @@
         <span class="text-slate-400 text-xs italic">Tap word or Drag to reorder</span>
       </div>
 
-      <!-- Target Drop Zone (Dark slate box like image 2) -->
+      <!-- Target Drop Zone -->
       <div id="target-box" class="target-drop-zone bg-[#545b6b] rounded-2xl p-4 flex flex-wrap gap-2.5 items-center justify-center transition-all duration-200 shadow-inner min-h-[120px]">
         <span id="target-empty-prompt" class="text-slate-300/80 font-bold text-sm sm:text-base pointer-events-none select-none text-center">
           Drop word cards here to build your sentence...
@@ -238,7 +247,7 @@
       </div>
     </div>
 
-    <!-- Scrambled Words Pool (Matching Image 3: Large, bold words filling the cards) -->
+    <!-- Scrambled Words Pool -->
     <div class="w-full bg-white/70 backdrop-blur rounded-2xl p-4 sm:p-6 shadow-md border border-slate-200/90 mb-6">
       <div class="text-xs uppercase font-extrabold text-slate-400 tracking-wider mb-3">
         Available Words (Tap to move into the sentence area):
@@ -248,7 +257,7 @@
       </div>
     </div>
 
-    <!-- Control Action Buttons (Reset, Check Answer, Next) (Matching Image 2) -->
+    <!-- Control Action Buttons (Reset, Check Answer, Next) -->
     <div class="flex flex-wrap items-center justify-center gap-3">
       <button id="btn-reset" class="flex items-center gap-2 bg-[#334155] hover:bg-[#1e293b] active:scale-95 text-white font-extrabold px-6 py-3 rounded-2xl shadow-md transition-all text-sm sm:text-base">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -292,7 +301,6 @@
   </footer>
 
   <!-- ================= MODAL: LOAD & EDIT SENTENCES ================= -->
-  <!-- Designed with dark styling from Image 1, but with 2 columns from Image 5 (Sentences & Meanings) -->
   <div id="load-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-6 hidden">
     <div class="bg-[#1e2538] border border-slate-700/80 rounded-3xl max-w-3xl w-full max-h-[92vh] overflow-y-auto shadow-2xl p-5 sm:p-7 text-white relative">
       
@@ -311,7 +319,7 @@
         </button>
       </div>
 
-      <!-- Presets Buttons (From Image 1) -->
+      <!-- Presets Buttons -->
       <div class="mt-4">
         <label class="block text-xs uppercase font-extrabold tracking-wider text-slate-400 mb-2">Preset Sentences:</label>
         <div class="flex flex-wrap gap-2">
@@ -322,14 +330,15 @@
         </div>
       </div>
 
-      <!-- Tip instructions (From Image 1) -->
-      <div class="mt-3 text-xs text-slate-400 bg-slate-900/60 p-2.5 rounded-xl border border-slate-800">
-        <span class="text-amber-400 font-bold">Tip:</span> For compound phrases or grouped words, use underscores like <code class="text-indigo-300">我早_饭吃两个包_子。</code> or brackets like <code class="text-indigo-300">[my cat]</code> or <code class="text-indigo-300">[早饭]</code> to bundle characters into one bubble.
+      <!-- Tip instructions -->
+      <div class="mt-3 text-xs text-slate-400 bg-slate-900/60 p-2.5 rounded-xl border border-slate-800 leading-relaxed">
+        <span class="text-amber-400 font-bold">Quy tắc nối từ:</span><br>
+        • Tiếng Trung: Dùng dấu gạch dưới <code class="text-indigo-300">_</code> để nối các từ bạn muốn gộp chung thành một khung (ví dụ: <code class="text-emerald-300">他七_点起_床_，八_点出_门。</code> sẽ tách thành 6 khung: <b>他 | 七点 | 起床，| 八点 | 出门 | 。</b>). Những chữ không có dấu gạch liền kề sẽ đứng riêng.<br>
+        • Hoặc có thể dùng ngoặc vuông như <code class="text-indigo-300">[七点]</code>, <code class="text-indigo-300">[起床，]</code>.
       </div>
 
-      <!-- Two-column input area (Shape of Image 5 + Dark Aesthetic of Image 1) -->
+      <!-- Two-column input area -->
       <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-        
         <!-- Column 1: Target Sentences -->
         <div class="flex flex-col">
           <div class="flex items-center justify-between mb-1.5">
@@ -338,7 +347,7 @@
             </label>
             <span class="text-[11px] text-slate-400">English / 中文</span>
           </div>
-          <textarea id="input-sentences" rows="8" class="w-full bg-[#111625] border border-slate-700 rounded-2xl p-3 text-sm font-mono text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition-colors" placeholder="I am going to visit my grandparents tomorrow.&#10;What is your favorite color?&#10;She loves reading books in the library.&#10;Where do you live?&#10;The cat is sleeping on the warm rug."></textarea>
+          <textarea id="input-sentences" rows="8" class="w-full bg-[#111625] border border-slate-700 rounded-2xl p-3 text-sm font-mono text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition-colors" placeholder="I am going to visit my grandparents tomorrow.&#10;What is your favorite color?"></textarea>
         </div>
 
         <!-- Column 2: Vietnamese Meanings -->
@@ -349,7 +358,7 @@
             </label>
             <span class="text-[11px] text-emerald-400">Tiếng Việt</span>
           </div>
-          <textarea id="input-meanings" rows="8" class="w-full bg-[#111625] border border-slate-700 rounded-2xl p-3 text-sm font-mono text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition-colors" placeholder="Tôi sẽ đi thăm ông bà vào ngày mai.&#10;Màu sắc yêu thích của bạn là gì?&#10;Cô ấy thích đọc sách trong thư viện.&#10;Bạn sống ở đâu?&#10;Con mèo đang ngủ trên chiếc thảm ấm."></textarea>
+          <textarea id="input-meanings" rows="8" class="w-full bg-[#111625] border border-slate-700 rounded-2xl p-3 text-sm font-mono text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition-colors" placeholder="Tôi sẽ đi thăm ông bà vào ngày mai.&#10;Màu sắc yêu thích của bạn là gì?"></textarea>
         </div>
       </div>
 
@@ -384,12 +393,12 @@
       <p class="text-xs text-slate-400 mb-4">Students opening this link can only solve questions. The answer keys and editor are completely hidden.</p>
 
       <!-- QR Code Canvas Container -->
-      <div class="bg-white p-4 rounded-2xl inline-block shadow-inner mb-4">
+      <div class="bg-white p-4 rounded-2xl inline-block shadow-inner mb-4 min-w-[210px] min-h-[210px] flex items-center justify-center">
         <div id="qrcode-container" class="flex justify-center items-center"></div>
       </div>
 
       <!-- Share Link Box -->
-      <div class="flex items-center gap-2 bg-[#111625] border border-slate-700 rounded-xl p-2 mb-4 text-left">
+      <div class="flex items-center gap-2 bg-[#111625] border border-slate-700 rounded-xl p-2 mb-3 text-left">
         <input id="student-share-link" type="text" readonly class="w-full bg-transparent text-xs text-slate-300 font-mono focus:outline-none px-2 select-all">
         <button id="btn-copy-share-link" class="bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white text-xs font-bold px-3 py-2 rounded-lg transition-all shrink-0">
           Copy Link
@@ -397,10 +406,11 @@
       </div>
 
       <p id="copy-status-msg" class="text-xs text-emerald-400 font-bold hidden">✓ Link copied to clipboard!</p>
+      <p id="share-fallback-msg" class="text-[11px] text-amber-300/90 mt-1 hidden"></p>
     </div>
   </div>
 
-  <!-- Audio Synthesizer & Logic JavaScript -->
+  <!-- Script logic -->
   <script>
     /* ====================================================================
        DATA PRESETS & DEFAULT CONTENT
@@ -440,12 +450,14 @@
       },
       chinese: {
         sentences: [
+          "他七_点起_床_，八_点出_门。",
           "这些都是我买的。",
           "我早_饭吃了两个包_子。",
           "你喜欢学中文吗？",
           "他每天都去图书馆看书。"
         ],
         meanings: [
+          "Anh ấy 7 giờ thức dậy, 8 giờ ra khỏi nhà.",
           "Những thứ này đều là tôi mua.",
           "Bữa sáng tôi đã ăn hai cái bánh bao.",
           "Bạn có thích học tiếng Trung không?",
@@ -459,23 +471,22 @@
           "A journey of a thousand miles begins with a single step."
         ],
         meanings: [
-          "Có công mài sắt có ngày nên kim (Thực hành tạo nên hoàn hảo).",
+          "Có công mài sắt có ngày nên kim.",
           "Hành động có ý nghĩa hơn lời nói suông.",
           "Hành trình vạn dặm bắt đầu từ một bước chân."
         ]
       }
     };
 
-    // Pastel palette variations for word bubbles (Large, fills box like image 3)
     const PASTEL_PALETTES = {
       pastel: [
-        { bg: "#be185d", text: "#ffffff" }, // deep pink/crimson like image 3
-        { bg: "#b91c1c", text: "#ffffff" }, // crimson red
-        { bg: "#4338ca", text: "#ffffff" }, // deep indigo
-        { bg: "#047857", text: "#ffffff" }, // emerald teal
-        { bg: "#c2410c", text: "#ffffff" }, // terracotta orange
-        { bg: "#7e22ce", text: "#ffffff" }, // rich violet
-        { bg: "#0e7490", text: "#ffffff" }  // ocean cyan
+        { bg: "#be185d", text: "#ffffff" },
+        { bg: "#b91c1c", text: "#ffffff" },
+        { bg: "#4338ca", text: "#ffffff" },
+        { bg: "#047857", text: "#ffffff" },
+        { bg: "#c2410c", text: "#ffffff" },
+        { bg: "#7e22ce", text: "#ffffff" },
+        { bg: "#0e7490", text: "#ffffff" }
       ],
       warm: [
         { bg: "#db2777", text: "#ffffff" },
@@ -504,19 +515,18 @@
        ==================================================================== */
     let questions = [];
     let currentIndex = 0;
-    let timerValue = 60; // default seconds
+    let timerValue = 60;
     let remainingTime = 60;
     let timerInterval = null;
     let soundEnabled = true;
     let synth = null;
-    let musicLoop = null;
     let scalePercent = 160;
     let currentTheme = 'pastel';
     let sortableTarget = null;
     let isCurrentQuestionAnsweredCorrectly = false;
     let isStudentMode = false;
     let qrcodeInstance = null;
-    let showPinyin = true; // Pinyin toggle state
+    let showPinyin = true;
 
     // DOM Elements
     const bodyEl = document.getElementById('app-body');
@@ -543,6 +553,7 @@
     const btnCheck = document.getElementById('btn-check');
     const btnReset = document.getElementById('btn-reset');
     const btnNext = document.getElementById('btn-next');
+    const btnShuffleQuestions = document.getElementById('btn-shuffle-questions');
 
     // Share Modal elements
     const shareModal = document.getElementById('share-modal');
@@ -551,6 +562,7 @@
     const studentShareLinkInput = document.getElementById('student-share-link');
     const btnCopyShareLink = document.getElementById('btn-copy-share-link');
     const copyStatusMsg = document.getElementById('copy-status-msg');
+    const shareFallbackMsg = document.getElementById('share-fallback-msg');
     const qrcodeContainer = document.getElementById('qrcode-container');
     const studentModeBadge = document.getElementById('student-mode-badge');
 
@@ -565,13 +577,13 @@
     const presetButtons = document.querySelectorAll('.preset-btn');
 
     /* ====================================================================
-       INITIAL AUDIO SETUP (Tone.js)
+       AUDIO SETUP (Tone.js)
        ==================================================================== */
     function initToneAudio() {
       if (synth) return;
       try {
         synth = new Tone.PolySynth(Tone.Synth).toDestination();
-        synth.volume.value = -6; // Initial SFX volume
+        synth.volume.value = -6;
       } catch (e) {
         console.warn("Audio init deferred until user gesture", e);
       }
@@ -587,7 +599,6 @@
 
         const sfxVol = parseInt(sfxSlider.value, 10);
         if (sfxVol === 0) return;
-        // Map 0-100 to decibels (-30 to +2)
         synth.volume.value = (sfxVol / 100) * 32 - 30;
 
         const now = Tone.now();
@@ -606,75 +617,81 @@
     }
 
     /* ====================================================================
-       SENTENCE PARSER (Supports brackets [word_group], underscores word_word, and spaces)
+       TOKENIZER / PARSER
+       Fixed Chinese parsing logic:
+       An underscore '_' binds the character immediately preceding it
+       with the character immediately following it.
+       Example: '他七_点起_床_，八_点出_门。'
+       Output: ['他', '七点', '起床，', '八点', '出门', '。']
        ==================================================================== */
     function parseSentenceIntoTokens(sentence) {
       const tokens = [];
       const trimmed = sentence.trim();
 
-      // Detect if text contains Chinese / CJK characters or punctuation
+      // Check if text has Chinese/CJK characters or fullwidth punctuation
       const hasChinese = /[\u4e00-\u9fa5\u3000-\u303f\uff01-\uff60]/.test(trimmed);
 
       if (hasChinese) {
-        // Step 1: Handle bracket groups like [my cat] or [早饭]
+        // Extract bracketed groups first: [word group]
         const placeholders = [];
-        let str = trimmed.replace(/\[(.*?)\]/g, (match, content) => {
+        let cleanStr = trimmed.replace(/\[(.*?)\]/g, (match, content) => {
           placeholders.push(content);
-          return `__PH${placeholders.length - 1}__`;
+          return `\uE000${placeholders.length - 1}\uE001`;
         });
 
-        // Step 2: Handle explicit underscore connections.
-        // Match only characters directly adjacent to underscore (e.g. 早_饭, 包_子, 我_早_饭)
-        // Does NOT greedily capture un-underscored characters before or after!
-        str = str.replace(/([^\s_]+(?:_[^\s_]+)+)/g, (match) => {
-          // Keep only the adjacent words connected by _, not surrounding un-connected text
-          // Example: "我早_饭" -> "我" + "早_饭"
-          return match;
-        });
+        // Split by whitespace if any, then parse character sequences
+        const sections = cleanStr.split(/\s+/).filter(Boolean);
 
-        // Precise scanner: scan through the string
-        let i = 0;
-        while (i < str.length) {
-          // Check placeholder
-          if (str.startsWith('__PH', i)) {
-            const endIdx = str.indexOf('__', i + 4);
-            if (endIdx !== -1) {
-              const phIdx = parseInt(str.substring(i + 4, endIdx), 10);
-              const val = placeholders[phIdx] || '';
-              tokens.push({ raw: val, display: val });
-              i = endIdx + 2;
+        for (const sec of sections) {
+          // Token array from scanning 'sec'
+          // We can parse connected clusters:
+          // A cluster is either a placeholder \uE000x\uE001 or a character,
+          // joined with another cluster if separated by '_'
+          const rawItems = [];
+          let idx = 0;
+          while (idx < sec.length) {
+            if (sec[idx] === '\uE000') {
+              const closeIdx = sec.indexOf('\uE001', idx);
+              if (closeIdx !== -1) {
+                const pIdx = parseInt(sec.substring(idx + 1, closeIdx), 10);
+                rawItems.push({ type: 'item', text: placeholders[pIdx] || '' });
+                idx = closeIdx + 1;
+                continue;
+              }
+            }
+            if (sec[idx] === '_') {
+              rawItems.push({ type: 'sep' });
+              idx++;
               continue;
             }
+            rawItems.push({ type: 'item', text: sec[idx] });
+            idx++;
           }
 
-          // Skip whitespaces
-          if (/\s/.test(str[i])) {
-            i++;
-            continue;
-          }
-
-          // Check if current position starts an underscore compound: char_char...
-          // Look ahead to see if there is an underscore connected sequence starting here
-          if (i + 1 < str.length && str[i + 1] === '_') {
-            let compound = str[i];
-            let ptr = i + 1;
-            while (ptr < str.length && (str[ptr] === '_' || (ptr > 0 && str[ptr - 1] === '_') || (ptr + 1 < str.length && str[ptr + 1] === '_'))) {
-              if (str[ptr] !== '_') {
-                compound += str[ptr];
+          // Now merge items that have 'sep' between them:
+          // [item(他), item(七), sep, item(点), item(起), sep, item(床), sep, item(，), item(八), sep, item(点), item(出), sep, item(门), item(。)]
+          let currentBubble = '';
+          for (let k = 0; k < rawItems.length; k++) {
+            const cur = rawItems[k];
+            if (cur.type === 'item') {
+              currentBubble += cur.text;
+              // Look ahead: is the next token a 'sep' (underscore)?
+              // If so, the underscore links this item with the following item!
+              if (k + 1 < rawItems.length && rawItems[k + 1].type === 'sep') {
+                // Keep accumulating into currentBubble
+                k++; // consume the sep
+              } else {
+                // Not followed by underscore -> complete this bubble
+                if (currentBubble.length > 0) {
+                  tokens.push({ raw: currentBubble, display: currentBubble });
+                  currentBubble = '';
+                }
               }
-              ptr++;
             }
-            tokens.push({ raw: compound, display: compound });
-            i = ptr;
-            continue;
           }
-
-          // If next is not underscore and current is not connected, treat as single character
-          const char = str[i];
-          if (char !== '_') {
-            tokens.push({ raw: char, display: char });
+          if (currentBubble.length > 0) {
+            tokens.push({ raw: currentBubble, display: currentBubble });
           }
-          i++;
         }
 
         return tokens;
@@ -738,7 +755,7 @@
       const originalTokens = parseSentenceIntoTokens(current.sentence);
       let shuffledTokens = shuffleArray(originalTokens);
 
-      // Avoid edge case where shuffle is accidentally the exact original sentence
+      // Avoid edge case where shuffle is identical to original sentence
       if (shuffledTokens.length > 1 && shuffledTokens.every((tok, i) => tok.display === originalTokens[i].display)) {
         shuffledTokens.reverse();
       }
@@ -758,11 +775,6 @@
 
     /* ====================================================================
        CREATE WORD CARD COMPONENT
-       - Large, bold font filling the card like Image 3
-       - Vibrant pastel tones
-       - Tap to toggle between Pool and Target
-       - Draggable into Target box
-       - Displays Pinyin together in the same card if enabled
        ==================================================================== */
     function createWordCard(text, color) {
       const card = document.createElement('div');
@@ -793,24 +805,20 @@
         }
       }
 
-      // Inner text span
       const span = document.createElement('span');
       span.className = 'word-text';
       span.textContent = text;
       card.appendChild(span);
 
-      // Set dynamic font size based on the slider
       applyCardFontSize(card, scalePercent);
 
-      // Click to move directly between pool and target box
-      card.addEventListener('click', (e) => {
+      // Tap to move directly between pool and target box
+      card.addEventListener('click', () => {
         playToneSound('tap');
         if (card.parentElement === poolBox) {
-          // Move from pool into target
           targetEmptyPrompt.style.display = 'none';
           targetBox.appendChild(card);
         } else {
-          // Move from target back to pool
           poolBox.appendChild(card);
           if (targetBox.querySelectorAll('.word-card').length === 0) {
             targetEmptyPrompt.style.display = 'block';
@@ -822,7 +830,6 @@
     }
 
     function applyCardFontSize(card, percent) {
-      // Base rem scale (1.1rem at 100%, up to ~2.5rem at 230%)
       const sizeRem = (1.1 * (percent / 100)).toFixed(2);
       card.style.fontSize = `${sizeRem}rem`;
     }
@@ -843,10 +850,25 @@
         pinyinToggleCircle.className = "pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out translate-x-0";
       }
 
-      // Toggle display on all rendered pinyin spans
       document.querySelectorAll('.word-pinyin').forEach(el => {
         el.style.display = showPinyin ? 'block' : 'none';
       });
+    });
+
+    /* ====================================================================
+       SHUFFLE QUESTIONS ACTION
+       ==================================================================== */
+    btnShuffleQuestions.addEventListener('click', () => {
+      if (questions.length <= 1) {
+        showFeedback('Not enough questions to shuffle!', 'info', false);
+        return;
+      }
+      Tone.start();
+      playToneSound('tap');
+      questions = shuffleArray(questions);
+      currentIndex = 0;
+      loadCurrentQuestion();
+      showFeedback(`🔀 Shuffled ${questions.length} questions randomly!`, 'success', false);
     });
 
     /* ====================================================================
@@ -854,7 +876,6 @@
        ==================================================================== */
     function resetTimer() {
       clearInterval(timerInterval);
-      // Read user setting
       const customSeconds = parseInt(timerSettingInput.value, 10);
       remainingTime = (!isNaN(customSeconds) && customSeconds > 0) ? customSeconds : 60;
       updateTimerDisplay();
@@ -894,11 +915,8 @@
       const current = questions[currentIndex];
       const targetCards = targetBox.querySelectorAll('.word-card');
       const assembledTokens = Array.from(targetCards).map(c => c.dataset.word.trim());
-
-      // Target original tokens
       const originalTokens = parseSentenceIntoTokens(current.sentence).map(t => t.display.trim());
 
-      // Compare
       const isComplete = assembledTokens.length === originalTokens.length;
       const isCorrect = isComplete && assembledTokens.every((word, idx) => word === originalTokens[idx]);
 
@@ -907,21 +925,17 @@
         isCurrentQuestionAnsweredCorrectly = true;
         playToneSound('correct');
 
-        // Visual success with speaker button enabled
         showFeedback('🎉 Awesome! Correct answer! Click "Next" to continue.', 'success', true);
         btnNext.disabled = false;
         btnNext.classList.remove('opacity-50', 'cursor-not-allowed');
 
-        // Add bounce celebration on cards
         targetCards.forEach(c => {
           c.classList.add('ring-4', 'ring-emerald-300');
         });
       } else {
         playToneSound('wrong');
-        // Visual failure: user must try again
         showFeedback('❌ Incorrect order! Please adjust words and try again.', 'error', false);
 
-        // Flash target area
         targetBox.classList.add('ring-4', 'ring-rose-400');
         setTimeout(() => {
           targetBox.classList.remove('ring-4', 'ring-rose-400');
@@ -934,35 +948,26 @@
        ==================================================================== */
     function speakCurrentSentence() {
       if (!('speechSynthesis' in window)) return;
-      window.speechSynthesis.cancel(); // Stop any ongoing speech
+      window.speechSynthesis.cancel();
 
       const current = questions[currentIndex];
       if (!current) return;
 
-      // Clean brackets, underscores and extra marks for natural reading
       const cleanSentence = current.sentence
         .replace(/[\[\]]/g, '')
         .replace(/_/g, ' ')
         .trim();
 
       const utterance = new SpeechSynthesisUtterance(cleanSentence);
-
-      // Detect if Chinese characters are present
       const isChinese = /[\u4e00-\u9fa5]/.test(cleanSentence);
       utterance.lang = isChinese ? 'zh-CN' : 'en-US';
 
-      // Set playback speed according to the speed selector
       const speedVal = speedSelector.value;
       utterance.rate = speedVal === 'slow' ? 0.75 : (speedVal === 'fast' ? 1.25 : 0.95);
 
-      // Animate speaker icon while playing
       btnSpeakSentence.classList.add('animate-pulse', 'bg-white/50');
-      utterance.onend = () => {
-        btnSpeakSentence.classList.remove('animate-pulse', 'bg-white/50');
-      };
-      utterance.onerror = () => {
-        btnSpeakSentence.classList.remove('animate-pulse', 'bg-white/50');
-      };
+      utterance.onend = () => btnSpeakSentence.classList.remove('animate-pulse', 'bg-white/50');
+      utterance.onerror = () => btnSpeakSentence.classList.remove('animate-pulse', 'bg-white/50');
 
       window.speechSynthesis.speak(utterance);
     }
@@ -1031,16 +1036,14 @@
     }
 
     /* ====================================================================
-       SETTINGS CONTROLS LISTENERS (Image 4 Features)
+       SETTINGS CONTROLS LISTENERS
        ==================================================================== */
-    // Font Size Slider
     fontSizeSlider.addEventListener('input', (e) => {
       scalePercent = e.target.value;
       fontSizeDisplay.textContent = `${scalePercent}%`;
       updateAllCardsSize();
     });
 
-    // Theme selector
     themeSelector.addEventListener('change', (e) => {
       currentTheme = e.target.value;
       if (currentTheme === 'pastel') {
@@ -1055,13 +1058,12 @@
       loadCurrentQuestion();
     });
 
-    // Timer Setting input change
     timerSettingInput.addEventListener('change', () => {
       resetTimer();
     });
 
     /* ====================================================================
-       STUDENT SHARING (QR CODE & LINK GENERATION)
+       STUDENT SHARING (QR CODE & LINK GENERATION) - ROBUST FIX
        ==================================================================== */
     function encodePayload(obj) {
       const jsonStr = JSON.stringify(obj);
@@ -1085,7 +1087,25 @@
         questions: questions
       };
       const encoded = encodePayload(payload);
-      const baseUrl = window.location.origin + window.location.pathname;
+
+      let baseUrl = '';
+      try {
+        const origin = window.location.origin;
+        const protocol = window.location.protocol;
+        // Check if origin is a valid web origin (not null, not file:)
+        if (origin && origin !== 'null' && (protocol === 'http:' || protocol === 'https:')) {
+          baseUrl = origin + window.location.pathname;
+        } else if (window.location.href && !window.location.href.startsWith('about:')) {
+          // Fallback to strip existing hash
+          baseUrl = window.location.href.split('#')[0];
+        } else {
+          // Standalone or local iframe
+          baseUrl = 'index.html';
+        }
+      } catch (e) {
+        baseUrl = 'index.html';
+      }
+
       return `${baseUrl}#data=${encoded}`;
     }
 
@@ -1093,17 +1113,22 @@
       const shareUrl = generateStudentLink();
       studentShareLinkInput.value = shareUrl;
       copyStatusMsg.classList.add('hidden');
+      shareFallbackMsg.classList.add('hidden');
 
-      // Generate or update QR Code
+      // Safely render QR Code
       qrcodeContainer.innerHTML = '';
-      qrcodeInstance = new QRCode(qrcodeContainer, {
-        text: shareUrl,
-        width: 190,
-        height: 190,
-        colorDark: "#0f172a",
-        colorLight: "#ffffff",
-        correctLevel: QRCode.CorrectLevel.M
-      });
+      try {
+        qrcodeInstance = new QRCode(qrcodeContainer, {
+          text: shareUrl,
+          width: 180,
+          height: 180,
+          colorDark: "#0f172a",
+          colorLight: "#ffffff",
+          correctLevel: QRCode.CorrectLevel.M
+        });
+      } catch (err) {
+        console.warn("QR code render note:", err);
+      }
 
       shareModal.classList.remove('hidden');
     }
@@ -1118,17 +1143,39 @@
       if (e.target === shareModal) closeShareModal();
     });
 
-    btnCopyShareLink.addEventListener('click', () => {
-      studentShareLinkInput.select();
-      studentShareLinkInput.setSelectionRange(0, 99999);
-      try {
-        document.execCommand('copy');
+    // Copy to clipboard with modern API + execCommand fallback
+    btnCopyShareLink.addEventListener('click', async () => {
+      const textToCopy = studentShareLinkInput.value;
+      let copied = false;
+
+      if (navigator.clipboard && window.isSecureContext) {
+        try {
+          await navigator.clipboard.writeText(textToCopy);
+          copied = true;
+        } catch (err) {
+          copied = false;
+        }
+      }
+
+      if (!copied) {
+        studentShareLinkInput.focus();
+        studentShareLinkInput.select();
+        studentShareLinkInput.setSelectionRange(0, 99999);
+        try {
+          copied = document.execCommand('copy');
+        } catch (err) {
+          copied = false;
+        }
+      }
+
+      if (copied) {
         copyStatusMsg.classList.remove('hidden');
         setTimeout(() => {
           copyStatusMsg.classList.add('hidden');
         }, 2500);
-      } catch (err) {
-        console.warn("Could not copy link", err);
+      } else {
+        shareFallbackMsg.textContent = "Please select and copy the link text directly.";
+        shareFallbackMsg.classList.remove('hidden');
       }
     });
 
@@ -1156,7 +1203,6 @@
       return false;
     }
 
-    // Audio SFX Volume Slider
     sfxSlider.addEventListener('input', () => {
       Tone.start();
       playToneSound('tap');
@@ -1166,9 +1212,8 @@
        MODAL INTERACTIONS (Load & Edit Sentences)
        ==================================================================== */
     function openModal() {
-      if (isStudentMode) return; // Prevent student access
+      if (isStudentMode) return;
 
-      // Sync textareas with current questions
       const sentenceLines = questions.map(q => q.sentence).join('\n');
       const meaningLines = questions.map(q => q.meaning).join('\n');
       inputSentences.value = sentenceLines;
@@ -1185,12 +1230,10 @@
     btnCloseModal.addEventListener('click', closeModal);
     btnCancelModal.addEventListener('click', closeModal);
 
-    // Click backdrop to close
     loadModal.addEventListener('click', (e) => {
       if (e.target === loadModal) closeModal();
     });
 
-    // Load Presets
     presetButtons.forEach(btn => {
       btn.addEventListener('click', () => {
         const key = btn.dataset.preset;
@@ -1201,7 +1244,6 @@
       });
     });
 
-    // Save & Apply Sentences
     btnSaveSentences.addEventListener('click', () => {
       const sentenceLines = inputSentences.value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
       const meaningLines = inputMeanings.value.split('\n').map(l => l.trim());
@@ -1228,7 +1270,6 @@
        DRAG AND DROP REORDERING INITIALIZATION (SortableJS)
        ==================================================================== */
     function initSortables() {
-      // Sortable for Target Box (Allows rearranging order of words)
       sortableTarget = new Sortable(targetBox, {
         group: 'shared-words',
         animation: 180,
@@ -1244,7 +1285,6 @@
         }
       });
 
-      // Sortable for Pool Box (Allows dragging back into pool or rearranging)
       new Sortable(poolBox, {
         group: 'shared-words',
         animation: 180,
@@ -1260,10 +1300,9 @@
       const loadedFromUrl = checkStudentModeFromURL();
 
       if (!loadedFromUrl) {
-        // Default to Grade 4 English preset
-        questions = PRESETS.grade4.sentences.map((sentence, idx) => ({
+        questions = PRESETS.chinese.sentences.map((sentence, idx) => ({
           sentence: sentence,
-          meaning: PRESETS.grade4.meanings[idx]
+          meaning: PRESETS.chinese.meanings[idx]
         }));
       }
 
