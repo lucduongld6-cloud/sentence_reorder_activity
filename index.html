@@ -16,6 +16,8 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
   <!-- QRCode.js for generating instant shareable QR codes for mobile students -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <!-- LZ-String for high-ratio URL-safe compression so QR codes and mobile links never exceed length limits -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.5.0/lz-string.min.js"></script>
   <!-- pinyin-pro CDN for accurate Chinese Pinyin tone marks -->
   <script src="https://cdn.jsdelivr.net/npm/pinyin-pro@3.18.2/dist/index.js"></script>
 
@@ -1063,37 +1065,71 @@
     });
 
     /* ====================================================================
-       STUDENT SHARING (QR CODE & LINK GENERATION) - ROBUST FIX
+       STUDENT SHARING (QR CODE & LINK GENERATION) - LZ-STRING COMPRESSED
        ==================================================================== */
     function encodePayload(obj) {
       try {
-        const jsonStr = JSON.stringify(obj);
-        // Robust UTF-8 to Base64 that works across all browsers & devices
+        // Store compact array format [timer, [[sentence, meaning], ...]] to save maximum space
+        const compactData = [
+          obj.timer || 60,
+          obj.questions.map(q => [q.sentence, q.meaning || ""])
+        ];
+        const jsonStr = JSON.stringify(compactData);
+
+        if (typeof LZString !== 'undefined') {
+          return 'lz_' + LZString.compressToEncodedURIComponent(jsonStr);
+        }
+
+        // Fallback UTF-8 Base64 URL-safe
         const utf8Bytes = encodeURIComponent(jsonStr).replace(/%([0-9A-F]{2})/g, function (match, p1) {
           return String.fromCharCode('0x' + p1);
         });
-        return encodeURIComponent(btoa(utf8Bytes));
+        return 'b64_' + btoa(utf8Bytes).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
       } catch (e) {
         console.error("Payload encoding error", e);
-        return encodeURIComponent(JSON.stringify(obj));
+        return '';
       }
     }
 
     function decodePayload(encoded) {
       if (!encoded) return null;
       try {
-        const decodedUri = decodeURIComponent(encoded);
-        // Try decoding standard UTF-8 Base64
-        try {
-          const binaryStr = atob(decodedUri);
-          const jsonStr = decodeURIComponent(Array.prototype.map.call(binaryStr, function (c) {
+        let jsonStr = '';
+
+        if (encoded.startsWith('lz_') && typeof LZString !== 'undefined') {
+          jsonStr = LZString.decompressFromEncodedURIComponent(encoded.slice(3));
+        } else if (encoded.startsWith('b64_')) {
+          let b64 = encoded.slice(4).replace(/-/g, '+').replace(/_/g, '/');
+          while (b64.length % 4) b64 += '=';
+          const binaryStr = atob(b64);
+          jsonStr = decodeURIComponent(Array.prototype.map.call(binaryStr, function (c) {
             return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
           }).join(''));
-          return JSON.parse(jsonStr);
-        } catch (base64Err) {
-          // Fallback: try raw JSON parse if plain text
-          return JSON.parse(decodedUri);
+        } else {
+          // Legacy support
+          const decodedUri = decodeURIComponent(encoded);
+          const binaryStr = atob(decodedUri);
+          jsonStr = decodeURIComponent(Array.prototype.map.call(binaryStr, function (c) {
+            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+          }).join(''));
         }
+
+        if (!jsonStr) return null;
+        const parsed = JSON.parse(jsonStr);
+
+        // Handle compact array format [timer, [[sentence, meaning], ...]]
+        if (Array.isArray(parsed) && Array.isArray(parsed[1])) {
+          return {
+            mode: 'student',
+            timer: parsed[0] || 60,
+            questions: parsed[1].map(item => ({
+              sentence: item[0],
+              meaning: item[1] || ""
+            }))
+          };
+        }
+
+        return parsed;
       } catch (e) {
         console.error("Payload decoding error", e);
         return null;
@@ -1102,7 +1138,6 @@
 
     function generateStudentLink() {
       const payload = {
-        mode: 'student',
         timer: parseInt(timerSettingInput.value, 10) || 60,
         questions: questions
       };
@@ -1110,22 +1145,16 @@
 
       let baseUrl = '';
       try {
-        const origin = window.location.origin;
-        const protocol = window.location.protocol;
-        if (origin && origin !== 'null' && (protocol === 'http:' || protocol === 'https:')) {
-          baseUrl = origin + window.location.pathname;
-        } else if (window.location.href && !window.location.href.startsWith('about:')) {
-          baseUrl = window.location.href.split('?')[0].split('#')[0];
-        } else {
-          baseUrl = 'index.html';
-        }
+        const urlObj = new URL(window.location.href);
+        urlObj.search = '';
+        urlObj.hash = '';
+        baseUrl = urlObj.toString();
       } catch (e) {
-        baseUrl = 'index.html';
+        baseUrl = window.location.href.split('?')[0].split('#')[0];
       }
 
-      // Include BOTH query parameter (?student=1&data=...) AND hash (#data=...)
-      // Tablet cameras & in-app browsers (Safari/Chrome/Zalo) often strip `#` during redirection.
-      return `${baseUrl}?student=1&data=${encoded}#data=${encoded}`;
+      // Single clean query parameter keeps link ultra-short so QR code never overflows
+      return `${baseUrl}?s=1&d=${encoded}`;
     }
 
     function openShareModal() {
@@ -1140,36 +1169,39 @@
       // 2. Clear previous QR content
       qrcodeContainer.innerHTML = '';
 
-      // 3. Render QR with QRCode.js or instant image fallback
+      // 3. Render QR with QRCode.js using Low/Medium error correction for higher capacity
       setTimeout(() => {
         let qrSuccess = false;
         if (typeof QRCode !== 'undefined') {
           try {
             qrcodeInstance = new QRCode(qrcodeContainer, {
               text: shareUrl,
-              width: 180,
-              height: 180,
+              width: 190,
+              height: 190,
               colorDark: "#0f172a",
               colorLight: "#ffffff",
-              correctLevel: QRCode.CorrectLevel.M
+              correctLevel: QRCode.CorrectLevel.L
             });
             qrSuccess = true;
           } catch (err) {
-            console.warn("QRCode.js render error, switching to fallback:", err);
+            console.warn("QRCode.js overflow or error, switching to fallback:", err);
             qrSuccess = false;
           }
         }
 
-        // Fallback: Use reliable image-based QR API if library is missing or failed
+        // Fallback: Use QuickChart QR API (supports long URLs cleanly without 414 error)
         if (!qrSuccess || qrcodeContainer.childElementCount === 0) {
           qrcodeContainer.innerHTML = '';
           const qrImg = document.createElement('img');
-          qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(shareUrl)}`;
+          qrImg.src = `https://quickchart.io/qr?size=190&ecLevel=L&text=${encodeURIComponent(shareUrl)}`;
           qrImg.alt = "Student QR Code";
-          qrImg.className = "w-[180px] h-[180px] rounded-lg shadow-sm";
+          qrImg.className = "w-[190px] h-[190px] rounded-lg shadow-sm";
+          qrImg.onerror = () => {
+            qrcodeContainer.innerHTML = '<div class="text-xs text-slate-600 p-3 font-bold">Danh sách câu quá dài cho mã QR. Vui lòng dùng nút "Copy Link" bên dưới để gửi cho học sinh!</div>';
+          };
           qrcodeContainer.appendChild(qrImg);
         }
-      }, 50);
+      }, 60);
     }
 
     function closeShareModal() {
@@ -1217,28 +1249,28 @@
       }
     });
 
-    // Check if opening URL has student payload in hash OR query search params
+    // Check if opening URL has student payload in query search params OR hash
     function checkStudentModeFromURL() {
       let rawData = null;
+      let forceStudentFlag = false;
 
       try {
-        // 1. Check URLSearchParams (?data=...) - most reliable on Tablet / Mobile browsers
         const urlParams = new URLSearchParams(window.location.search);
-        if (urlParams.has('data')) {
+        if (urlParams.get('s') === '1' || urlParams.get('student') === '1') {
+          forceStudentFlag = true;
+        }
+        if (urlParams.has('d')) {
+          rawData = urlParams.get('d');
+        } else if (urlParams.has('data')) {
           rawData = urlParams.get('data');
-        } else if (urlParams.get('student') === '1') {
-          // If only student flag exists, check hash next
         }
 
-        // 2. If not found in search query, check Hash (#data=...)
-        if (!rawData) {
-          const hash = window.location.hash;
-          if (hash && hash.includes('data=')) {
-            rawData = hash.split('data=')[1];
-            if (rawData && rawData.includes('&')) {
-              rawData = rawData.split('&')[0];
-            }
-          }
+        // Fallback check in Hash (#d=... or #data=...)
+        if (!rawData && window.location.hash) {
+          const hashStr = window.location.hash.replace(/^#/, '');
+          const hashParams = new URLSearchParams(hashStr);
+          if (hashParams.has('d')) rawData = hashParams.get('d');
+          else if (hashParams.has('data')) rawData = hashParams.get('data');
         }
       } catch (err) {
         console.warn("URL parsing error:", err);
@@ -1265,6 +1297,19 @@
           return true;
         }
       }
+
+      // Even if data was somehow truncated by a messenger app, honor ?s=1 so student never sees teacher tools
+      if (forceStudentFlag) {
+        isStudentMode = true;
+        if (btnOpenLoadModal) btnOpenLoadModal.classList.add('hidden');
+        if (btnShareRoom) btnShareRoom.classList.add('hidden');
+        if (btnShuffleQuestions) btnShuffleQuestions.classList.add('hidden');
+        if (studentModeBadge) {
+          studentModeBadge.classList.remove('hidden');
+          studentModeBadge.classList.add('flex');
+        }
+      }
+
       return false;
     }
 
