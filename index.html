@@ -814,8 +814,9 @@
 
       applyCardFontSize(card, scalePercent);
 
-      // Tap to move directly between pool and target box
-      card.addEventListener('click', () => {
+      // Tap / Click to move directly between pool and target box
+      card.addEventListener('click', (e) => {
+        if (card.dataset.dragging === 'true') return;
         playToneSound('tap');
         if (card.parentElement === poolBox) {
           targetEmptyPrompt.style.display = 'none';
@@ -1380,11 +1381,29 @@
        DRAG AND DROP REORDERING INITIALIZATION (SortableJS)
        ==================================================================== */
     function initSortables() {
-      sortableTarget = new Sortable(targetBox, {
+      const commonSortableOptions = {
         group: 'shared-words',
         animation: 180,
         ghostClass: 'sortable-ghost',
         draggable: '.word-card',
+        // Crucial for mobile/tablet: distinguish quick tap from press-and-drag
+        delay: 140,
+        delayOnTouchOnly: true,
+        touchStartThreshold: 6,
+        onStart: function (evt) {
+          if (evt.item) evt.item.dataset.dragging = 'true';
+        },
+        onEnd: function (evt) {
+          if (evt.item) {
+            setTimeout(() => {
+              evt.item.dataset.dragging = 'false';
+            }, 60);
+          }
+        }
+      };
+
+      sortableTarget = new Sortable(targetBox, {
+        ...commonSortableOptions,
         onAdd: function () {
           targetEmptyPrompt.style.display = 'none';
         },
@@ -1396,10 +1415,7 @@
       });
 
       new Sortable(poolBox, {
-        group: 'shared-words',
-        animation: 180,
-        ghostClass: 'sortable-ghost',
-        draggable: '.word-card'
+        ...commonSortableOptions
       });
     }
 
