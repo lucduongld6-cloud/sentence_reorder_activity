@@ -394,7 +394,7 @@
 
       <!-- QR Code Canvas Container -->
       <div class="bg-white p-4 rounded-2xl inline-block shadow-inner mb-4 min-w-[210px] min-h-[210px] flex items-center justify-center">
-        <div id="qrcode-container" class="flex justify-center items-center"></div>
+        <div id="qrcode-container" class="flex justify-center items-center w-[180px] h-[180px]"></div>
       </div>
 
       <!-- Share Link Box -->
@@ -1066,14 +1066,34 @@
        STUDENT SHARING (QR CODE & LINK GENERATION) - ROBUST FIX
        ==================================================================== */
     function encodePayload(obj) {
-      const jsonStr = JSON.stringify(obj);
-      return encodeURIComponent(btoa(unescape(encodeURIComponent(jsonStr))));
+      try {
+        const jsonStr = JSON.stringify(obj);
+        // Robust UTF-8 to Base64 that works across all browsers & devices
+        const utf8Bytes = encodeURIComponent(jsonStr).replace(/%([0-9A-F]{2})/g, function (match, p1) {
+          return String.fromCharCode('0x' + p1);
+        });
+        return encodeURIComponent(btoa(utf8Bytes));
+      } catch (e) {
+        console.error("Payload encoding error", e);
+        return encodeURIComponent(JSON.stringify(obj));
+      }
     }
 
     function decodePayload(encoded) {
+      if (!encoded) return null;
       try {
-        const jsonStr = decodeURIComponent(escape(atob(decodeURIComponent(encoded))));
-        return JSON.parse(jsonStr);
+        const decodedUri = decodeURIComponent(encoded);
+        // Try decoding standard UTF-8 Base64
+        try {
+          const binaryStr = atob(decodedUri);
+          const jsonStr = decodeURIComponent(Array.prototype.map.call(binaryStr, function (c) {
+            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+          }).join(''));
+          return JSON.parse(jsonStr);
+        } catch (base64Err) {
+          // Fallback: try raw JSON parse if plain text
+          return JSON.parse(decodedUri);
+        }
       } catch (e) {
         console.error("Payload decoding error", e);
         return null;
@@ -1092,21 +1112,20 @@
       try {
         const origin = window.location.origin;
         const protocol = window.location.protocol;
-        // Check if origin is a valid web origin (not null, not file:)
         if (origin && origin !== 'null' && (protocol === 'http:' || protocol === 'https:')) {
           baseUrl = origin + window.location.pathname;
         } else if (window.location.href && !window.location.href.startsWith('about:')) {
-          // Fallback to strip existing hash
-          baseUrl = window.location.href.split('#')[0];
+          baseUrl = window.location.href.split('?')[0].split('#')[0];
         } else {
-          // Standalone or local iframe
           baseUrl = 'index.html';
         }
       } catch (e) {
         baseUrl = 'index.html';
       }
 
-      return `${baseUrl}#data=${encoded}`;
+      // Include BOTH query parameter (?student=1&data=...) AND hash (#data=...)
+      // Tablet cameras & in-app browsers (Safari/Chrome/Zalo) often strip `#` during redirection.
+      return `${baseUrl}?student=1&data=${encoded}#data=${encoded}`;
     }
 
     function openShareModal() {
@@ -1115,22 +1134,42 @@
       copyStatusMsg.classList.add('hidden');
       shareFallbackMsg.classList.add('hidden');
 
-      // Safely render QR Code
-      qrcodeContainer.innerHTML = '';
-      try {
-        qrcodeInstance = new QRCode(qrcodeContainer, {
-          text: shareUrl,
-          width: 180,
-          height: 180,
-          colorDark: "#0f172a",
-          colorLight: "#ffffff",
-          correctLevel: QRCode.CorrectLevel.M
-        });
-      } catch (err) {
-        console.warn("QR code render note:", err);
-      }
-
+      // 1. Unhide modal FIRST so DOM element has measurable layout dimensions
       shareModal.classList.remove('hidden');
+
+      // 2. Clear previous QR content
+      qrcodeContainer.innerHTML = '';
+
+      // 3. Render QR with QRCode.js or instant image fallback
+      setTimeout(() => {
+        let qrSuccess = false;
+        if (typeof QRCode !== 'undefined') {
+          try {
+            qrcodeInstance = new QRCode(qrcodeContainer, {
+              text: shareUrl,
+              width: 180,
+              height: 180,
+              colorDark: "#0f172a",
+              colorLight: "#ffffff",
+              correctLevel: QRCode.CorrectLevel.M
+            });
+            qrSuccess = true;
+          } catch (err) {
+            console.warn("QRCode.js render error, switching to fallback:", err);
+            qrSuccess = false;
+          }
+        }
+
+        // Fallback: Use reliable image-based QR API if library is missing or failed
+        if (!qrSuccess || qrcodeContainer.childElementCount === 0) {
+          qrcodeContainer.innerHTML = '';
+          const qrImg = document.createElement('img');
+          qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(shareUrl)}`;
+          qrImg.alt = "Student QR Code";
+          qrImg.className = "w-[180px] h-[180px] rounded-lg shadow-sm";
+          qrcodeContainer.appendChild(qrImg);
+        }
+      }, 50);
     }
 
     function closeShareModal() {
@@ -1153,18 +1192,17 @@
           await navigator.clipboard.writeText(textToCopy);
           copied = true;
         } catch (err) {
-          copied = false;
+          console.warn("Clipboard API failed, fallback to execCommand", err);
         }
       }
 
       if (!copied) {
-        studentShareLinkInput.focus();
         studentShareLinkInput.select();
         studentShareLinkInput.setSelectionRange(0, 99999);
         try {
           copied = document.execCommand('copy');
         } catch (err) {
-          copied = false;
+          console.warn("execCommand copy failed", err);
         }
       }
 
@@ -1174,17 +1212,40 @@
           copyStatusMsg.classList.add('hidden');
         }, 2500);
       } else {
-        shareFallbackMsg.textContent = "Please select and copy the link text directly.";
-        shareFallbackMsg.classList.remove('hidden');
+        copyStatusMsg.textContent = "Please copy the link manually.";
+        copyStatusMsg.classList.remove('hidden');
       }
     });
 
-    // Check if opening URL has student payload in hash
+    // Check if opening URL has student payload in hash OR query search params
     function checkStudentModeFromURL() {
-      const hash = window.location.hash;
-      if (hash && hash.includes('data=')) {
-        const encoded = hash.split('data=')[1];
-        const data = decodePayload(encoded);
+      let rawData = null;
+
+      try {
+        // 1. Check URLSearchParams (?data=...) - most reliable on Tablet / Mobile browsers
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.has('data')) {
+          rawData = urlParams.get('data');
+        } else if (urlParams.get('student') === '1') {
+          // If only student flag exists, check hash next
+        }
+
+        // 2. If not found in search query, check Hash (#data=...)
+        if (!rawData) {
+          const hash = window.location.hash;
+          if (hash && hash.includes('data=')) {
+            rawData = hash.split('data=')[1];
+            if (rawData && rawData.includes('&')) {
+              rawData = rawData.split('&')[0];
+            }
+          }
+        }
+      } catch (err) {
+        console.warn("URL parsing error:", err);
+      }
+
+      if (rawData) {
+        const data = decodePayload(rawData);
         if (data && data.questions && data.questions.length > 0) {
           isStudentMode = true;
           questions = data.questions;
@@ -1192,11 +1253,15 @@
             timerSettingInput.value = data.timer;
           }
 
-          // Lock down UI for students: Hide "Load Sentences" & "Share"
-          btnOpenLoadModal.classList.add('hidden');
-          btnShareRoom.classList.add('hidden');
-          studentModeBadge.classList.remove('hidden');
-          studentModeBadge.classList.add('flex');
+          // Lock down UI for students: Hide teacher controls completely
+          if (btnOpenLoadModal) btnOpenLoadModal.classList.add('hidden');
+          if (btnShareRoom) btnShareRoom.classList.add('hidden');
+          if (btnShuffleQuestions) btnShuffleQuestions.classList.add('hidden');
+          
+          if (studentModeBadge) {
+            studentModeBadge.classList.remove('hidden');
+            studentModeBadge.classList.add('flex');
+          }
           return true;
         }
       }
